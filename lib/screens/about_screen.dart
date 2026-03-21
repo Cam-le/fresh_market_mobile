@@ -12,7 +12,7 @@ class AboutScreen extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 240,
+            expandedHeight: 200,
             pinned: true,
             backgroundColor: AppTheme.primaryGreen,
             flexibleSpace: FlexibleSpaceBar(
@@ -24,51 +24,54 @@ class AboutScreen extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 60),
-                    Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 20)
-                        ],
-                      ),
-                      child: const Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(Icons.fork_right,
-                              color: Color(0xFFF5A623), size: 48),
-                          Positioned(
-                            top: 12,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.eco,
-                                    color: AppTheme.primaryGreen, size: 22),
-                                Icon(Icons.eco,
-                                    color: Color(0xFF8BC34A), size: 18),
-                              ],
+                child: SafeArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 16)
+                          ],
+                        ),
+                        child: const Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(Icons.fork_right,
+                                color: Color(0xFFF5A623), size: 40),
+                            Positioned(
+                              top: 10,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.eco,
+                                      color: AppTheme.primaryGreen, size: 18),
+                                  Icon(Icons.eco,
+                                      color: Color(0xFF8BC34A), size: 14),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text('Ăn Sạch Sống Khỏe',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800)),
-                    const Text('Phiên bản 1.0.0',
-                        style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
+                      const SizedBox(height: 10),
+                      const Text('Ăn Sạch Sống Khỏe',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800)),
+                      const Text('Phiên bản 1.0.0',
+                          style:
+                              TextStyle(color: Colors.white70, fontSize: 12)),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -76,7 +79,7 @@ class AboutScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -87,7 +90,7 @@ class AboutScreen extends StatelessWidget {
                     icon: Icons.eco_outlined,
                     color: AppTheme.primaryGreen,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _InfoCard(
                     title: 'Cam kết của chúng tôi',
                     content:
@@ -95,11 +98,11 @@ class AboutScreen extends StatelessWidget {
                     icon: Icons.verified_outlined,
                     color: const Color(0xFF1E88E5),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   const Text('Thông tin liên hệ',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 10),
                   _ContactRow(
                       icon: Icons.email_outlined,
                       label: 'Email hỗ trợ',
@@ -116,23 +119,23 @@ class AboutScreen extends StatelessWidget {
                       icon: Icons.location_on_outlined,
                       label: 'Trụ sở',
                       value: '123 Nguyễn Huệ, Q.1, TP.HCM'),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   const Text('Theo dõi chúng tôi',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 10),
                   Row(
                     children: const [
                       _SocialBtn(
                           label: 'Facebook',
                           color: Color(0xFF1877F2),
                           icon: Icons.facebook),
-                      SizedBox(width: 10),
+                      SizedBox(width: 8),
                       _SocialBtn(
                           label: 'Instagram',
                           color: Color(0xFFE1306C),
                           icon: Icons.camera_alt_outlined),
-                      SizedBox(width: 10),
+                      SizedBox(width: 8),
                       _SocialBtn(
                           label: 'YouTube',
                           color: Color(0xFFFF0000),
@@ -141,15 +144,16 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   const Divider(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Center(
                     child: Column(
                       children: [
-                        Text('Build: 1 • SDK Flutter 3.x • Dart 3.x',
+                        Text('Build: 1 • Flutter 3.x • Dart 3.x',
                             style: TextStyle(
                                 fontSize: 11, color: Colors.grey[400])),
                         const SizedBox(height: 4),
-                        Text('© 2026 Ăn Sạch Sống Khỏe. All rights reserved.',
+                        Text(
+                            '© 2026 Ăn Sạch Sống Khỏe. All rights reserved.',
                             style: TextStyle(
                                 fontSize: 11, color: Colors.grey[400])),
                       ],
@@ -181,7 +185,7 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
@@ -191,11 +195,12 @@ class _InfoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
-              child: Icon(icon, color: color, size: 20),
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -204,13 +209,15 @@ class _InfoCard extends StatelessWidget {
                 children: [
                   Text(title,
                       style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: color)),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Text(content,
                       style: const TextStyle(
-                          fontSize: 13, color: AppTheme.textGray, height: 1.5)),
+                          fontSize: 12,
+                          color: AppTheme.textGray,
+                          height: 1.5)),
                 ],
               ),
             ),
@@ -229,23 +236,26 @@ class _ContactRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: AppTheme.primaryGreen),
+            Icon(icon, size: 16, color: AppTheme.primaryGreen),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 11, color: AppTheme.textLight)),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.textDark)),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(
+                          fontSize: 11, color: AppTheme.textLight)),
+                  Text(value,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textDark),
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
             ),
           ],
         ),
@@ -272,12 +282,13 @@ class _SocialBtn extends StatelessWidget {
               border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: color, size: 22),
+                Icon(icon, color: color, size: 20),
                 const SizedBox(height: 4),
                 Text(label,
                     style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: color,
                         fontWeight: FontWeight.w600)),
               ],

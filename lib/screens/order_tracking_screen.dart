@@ -19,7 +19,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   late AnimationController _progressCtrl;
   late Animation<double> _progressAnim;
 
-  // Simulated tracking steps
   static const List<_TrackStep> _steps = [
     _TrackStep(
       icon: Icons.check_circle,
@@ -58,7 +57,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       vsync: this,
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 0.8, end: 1.1)
+    _pulseAnim = Tween<double>(begin: 0.85, end: 1.1)
         .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
 
     _progressCtrl = AnimationController(
@@ -80,7 +79,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   String _formatPrice(double p) =>
       p
           .toStringAsFixed(0)
-          .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.') +
+          .replaceAllMapped(
+              RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.') +
       '₫';
 
   @override
@@ -99,13 +99,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Map placeholder with shipper info
             _buildMapSection(),
-            // Order info card
             _buildOrderCard(),
-            // Timeline
             _buildTimeline(),
-            // Items
             _buildItemsList(),
             const SizedBox(height: 100),
           ],
@@ -116,177 +112,187 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   }
 
   Widget _buildMapSection() {
-    return Container(
-      height: 220,
-      color: const Color(0xFFE8F5E9),
-      child: Stack(
-        children: [
-          // Fake map grid
-          CustomPaint(
-            size: const Size(double.infinity, 220),
-            painter: _MapGridPainter(),
-          ),
-          // Route line
-          CustomPaint(
-            size: const Size(double.infinity, 220),
-            painter: _RoutePainter(),
-          ),
-          // Shipper pin
-          Positioned(
-            left: MediaQuery.of(context).size.width * 0.55,
-            top: 80,
-            child: ScaleTransition(
-              scale: _pulseAnim,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentOrange,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.accentOrange.withValues(alpha: 0.4),
-                      blurRadius: 12,
-                      spreadRadius: 4,
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.delivery_dining,
-                    color: Colors.white, size: 22),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final mapHeight = (constraints.maxWidth * 0.55).clamp(160.0, 240.0);
+        final shipperLeft = constraints.maxWidth * 0.5;
+
+        return Container(
+          height: mapHeight,
+          color: const Color(0xFFE8F5E9),
+          child: Stack(
+            children: [
+              CustomPaint(
+                size: Size(constraints.maxWidth, mapHeight),
+                painter: _MapGridPainter(),
               ),
-            ),
-          ),
-          // Destination pin
-          Positioned(
-            right: 60,
-            top: 40,
-            child: Column(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 8)
-                    ],
-                  ),
-                  child: const Icon(Icons.home, color: Colors.white, size: 18),
-                ),
-                Container(width: 2, height: 12, color: AppTheme.primaryGreen),
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                      color: AppTheme.primaryGreen, shape: BoxShape.circle),
-                ),
-              ],
-            ),
-          ),
-          // ETA chip
-          Positioned(
-            top: 16,
-            left: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
-                ],
+              CustomPaint(
+                size: Size(constraints.maxWidth, mapHeight),
+                painter: _RoutePainter(),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.access_time,
-                      size: 16, color: AppTheme.primaryGreen),
-                  SizedBox(width: 6),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Dự kiến đến',
-                          style: TextStyle(
-                              fontSize: 10, color: AppTheme.textGray)),
-                      Text('10:30 - 11:00',
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.textDark)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Shipper info card
-          Positioned(
-            bottom: 12,
-            left: 12,
-            right: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 10)
-                ],
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor:
-                        AppTheme.accentOrange.withValues(alpha: 0.2),
-                    child: const Icon(Icons.person,
-                        color: AppTheme.accentOrange, size: 26),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Nguyễn Văn B',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w700)),
-                        Row(
-                          children: [
-                            Icon(Icons.star,
-                                size: 12, color: Color(0xFFFFC107)),
-                            Text(' 4.9  •  ',
-                                style: TextStyle(
-                                    fontSize: 11, color: AppTheme.textGray)),
-                            Text('Shipper',
-                                style: TextStyle(
-                                    fontSize: 11, color: AppTheme.textGray)),
-                          ],
+              // Shipper pin
+              Positioned(
+                left: shipperLeft - 22,
+                top: mapHeight * 0.36,
+                child: ScaleTransition(
+                  scale: _pulseAnim,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentOrange,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.accentOrange.withValues(alpha: 0.4),
+                          blurRadius: 12,
+                          spreadRadius: 4,
                         ),
                       ],
                     ),
+                    child: const Icon(Icons.delivery_dining,
+                        color: Colors.white, size: 22),
                   ),
-                  Row(
+                ),
+              ),
+              // Destination pin
+              Positioned(
+                right: 50,
+                top: mapHeight * 0.16,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryGreen,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 8)
+                        ],
+                      ),
+                      child: const Icon(Icons.home,
+                          color: Colors.white, size: 18),
+                    ),
+                    Container(
+                        width: 2, height: 10, color: AppTheme.primaryGreen),
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                          color: AppTheme.primaryGreen,
+                          shape: BoxShape.circle),
+                    ),
+                  ],
+                ),
+              ),
+              // ETA chip
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8)
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _CircleAction(icon: Icons.phone_outlined, onTap: () {}),
+                      Icon(Icons.access_time,
+                          size: 14, color: AppTheme.primaryGreen),
+                      SizedBox(width: 5),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Dự kiến đến',
+                              style: TextStyle(
+                                  fontSize: 9, color: AppTheme.textGray)),
+                          Text('10:30 - 11:00',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textDark)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Shipper info card
+              Positioned(
+                bottom: 10,
+                left: 10,
+                right: 10,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 10)
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor:
+                            AppTheme.accentOrange.withValues(alpha: 0.2),
+                        child: const Icon(Icons.person,
+                            color: AppTheme.accentOrange, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Nguyễn Văn B',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700)),
+                            Row(
+                              children: [
+                                Icon(Icons.star,
+                                    size: 11, color: Color(0xFFFFC107)),
+                                Text(' 4.9  •  Shipper',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.textGray)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      _CircleAction(
+                          icon: Icons.phone_outlined, onTap: () {}),
                       const SizedBox(width: 8),
                       _CircleAction(
                           icon: Icons.chat_bubble_outline, onTap: () {}),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -298,7 +304,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -306,18 +313,19 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           Row(
             children: [
               const Icon(Icons.receipt_long_outlined,
-                  size: 18, color: AppTheme.primaryGreen),
+                  size: 16, color: AppTheme.primaryGreen),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   widget.order.id,
                   style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700),
+                      fontSize: 13, fontWeight: FontWeight.w700),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppTheme.accentOrange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -325,7 +333,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                 child: const Text(
                   'Đang giao hàng',
                   style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.accentOrange),
                 ),
@@ -333,7 +341,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
             ],
           ),
           const SizedBox(height: 10),
-          // Progress bar
           AnimatedBuilder(
             animation: _progressAnim,
             builder: (_, __) => Column(
@@ -342,46 +349,46 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: _progressAnim.value * 0.6,
-                    minHeight: 8,
+                    minHeight: 7,
                     backgroundColor: const Color(0xFFE0E0E0),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                         AppTheme.accentOrange),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Đã đặt',
                         style: TextStyle(
-                            fontSize: 10, color: AppTheme.primaryGreen)),
+                            fontSize: 9, color: AppTheme.primaryGreen)),
                     const Text('Chuẩn bị',
                         style: TextStyle(
-                            fontSize: 10, color: AppTheme.primaryGreen)),
+                            fontSize: 9, color: AppTheme.primaryGreen)),
                     const Text('Đang giao',
                         style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 9,
                             color: AppTheme.accentOrange,
                             fontWeight: FontWeight.w700)),
                     Text('Đã giao',
-                        style:
-                            TextStyle(fontSize: 10, color: Colors.grey[400])),
+                        style: TextStyle(
+                            fontSize: 9, color: Colors.grey[400])),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Row(
             children: [
               const Icon(Icons.location_on_outlined,
-                  size: 14, color: AppTheme.textLight),
+                  size: 13, color: AppTheme.textLight),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   widget.order.address,
                   style:
-                      const TextStyle(fontSize: 12, color: AppTheme.textGray),
+                      const TextStyle(fontSize: 11, color: AppTheme.textGray),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -396,20 +403,21 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   Widget _buildTimeline() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Hành trình đơn hàng',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 16),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 14),
           ...List.generate(_steps.length, (i) {
             final step = _steps[i];
             final isLast = i == _steps.length - 1;
@@ -423,12 +431,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   Widget _buildItemsList() {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -437,11 +446,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           Row(
             children: [
               const Text('Sản phẩm đặt hàng',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
               const Spacer(),
               Text('${widget.order.items.length} sản phẩm',
                   style:
-                      const TextStyle(fontSize: 12, color: AppTheme.textGray)),
+                      const TextStyle(fontSize: 11, color: AppTheme.textGray)),
             ],
           ),
           const SizedBox(height: 12),
@@ -451,12 +460,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           Row(
             children: [
               const Text('Tổng thanh toán',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
               const Spacer(),
               Text(
                 _formatPrice(widget.order.total),
                 style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: AppTheme.primaryGreen),
               ),
@@ -469,12 +478,14 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
 
   Widget _buildBottomBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 28),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-              color: Color(0x1A000000), blurRadius: 12, offset: Offset(0, -3))
+              color: Color(0x1A000000),
+              blurRadius: 12,
+              offset: Offset(0, -3))
         ],
       ),
       child: Row(
@@ -482,29 +493,31 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           Expanded(
             child: OutlinedButton.icon(
               onPressed: () {},
-              icon: const Icon(Icons.headset_mic_outlined, size: 18),
-              label: const Text('Hỗ trợ'),
+              icon: const Icon(Icons.headset_mic_outlined, size: 16),
+              label: const Text('Hỗ trợ',
+                  style: TextStyle(fontSize: 13)),
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 50),
+                minimumSize: const Size(0, 46),
                 foregroundColor: AppTheme.primaryGreen,
                 side: const BorderSide(color: AppTheme.primaryGreen),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(10)),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             flex: 2,
             child: ElevatedButton.icon(
               onPressed: () {},
-              icon: const Icon(Icons.cancel_outlined, size: 18),
-              label: const Text('Huỷ đơn hàng'),
+              icon: const Icon(Icons.cancel_outlined, size: 16),
+              label: const Text('Huỷ đơn hàng',
+                  style: TextStyle(fontSize: 13)),
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size(0, 50),
+                minimumSize: const Size(0, 46),
                 backgroundColor: AppTheme.discountRed,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(10)),
               ),
             ),
           ),
@@ -556,21 +569,22 @@ class _TimelineRow extends StatelessWidget {
         Column(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                color:
-                    color.withValues(alpha: isDone || isActive ? 0.15 : 0.05),
+                color: color.withValues(
+                    alpha: isDone || isActive ? 0.15 : 0.05),
                 shape: BoxShape.circle,
-                border: Border.all(color: color, width: isActive ? 2 : 1.5),
+                border: Border.all(
+                    color: color, width: isActive ? 2 : 1.5),
               ),
-              child: Icon(step.icon, size: 18, color: color),
+              child: Icon(step.icon, size: 16, color: color),
             ),
             if (!isLast)
               Container(
                 width: 2,
-                height: 36,
-                margin: const EdgeInsets.symmetric(vertical: 4),
+                height: 32,
+                margin: const EdgeInsets.symmetric(vertical: 3),
                 decoration: BoxDecoration(
                   color: isDone
                       ? AppTheme.primaryGreen.withValues(alpha: 0.3)
@@ -580,10 +594,10 @@ class _TimelineRow extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(top: 6, bottom: 16),
+            padding: const EdgeInsets.only(top: 4, bottom: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -593,9 +607,10 @@ class _TimelineRow extends StatelessWidget {
                       child: Text(
                         step.title,
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight:
-                              isActive ? FontWeight.w700 : FontWeight.w600,
+                          fontSize: 13,
+                          fontWeight: isActive
+                              ? FontWeight.w700
+                              : FontWeight.w600,
                           color: isActive
                               ? AppTheme.accentOrange
                               : isDone
@@ -607,15 +622,18 @@ class _TimelineRow extends StatelessWidget {
                     if (step.time.isNotEmpty)
                       Text(step.time,
                           style: const TextStyle(
-                              fontSize: 12, color: AppTheme.textLight)),
+                              fontSize: 11,
+                              color: AppTheme.textLight)),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   step.subtitle,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: isActive ? AppTheme.textGray : AppTheme.textLight,
+                    fontSize: 11,
+                    color: isActive
+                        ? AppTheme.textGray
+                        : AppTheme.textLight,
                     height: 1.4,
                   ),
                 ),
@@ -639,13 +657,13 @@ class _CircleAction extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 38,
-        height: 38,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
           color: AppTheme.primaryGreen.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 18, color: AppTheme.primaryGreen),
+        child: Icon(icon, size: 16, color: AppTheme.primaryGreen),
       ),
     );
   }
@@ -667,11 +685,11 @@ class _ItemRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
               item.product.imageUrl,
-              width: 48,
-              height: 48,
+              width: 46,
+              height: 46,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
-                  width: 48, height: 48, color: const Color(0xFFE8F5E9)),
+                  width: 46, height: 46, color: const Color(0xFFE8F5E9)),
             ),
           ),
           const SizedBox(width: 10),
@@ -708,19 +726,19 @@ class _MapGridPainter extends CustomPainter {
     final paint = Paint()
       ..color = const Color(0xFFD0E8D0)
       ..strokeWidth = 1;
-    // Horizontal lines
-    for (double y = 0; y < size.height; y += 30) {
+    for (double y = 0; y < size.height; y += 28) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
-    // Vertical lines
-    for (double x = 0; x < size.width; x += 40) {
+    for (double x = 0; x < size.width; x += 36) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
-    // Block fills
     final blockPaint = Paint()..color = const Color(0xFFC5DFC5);
-    canvas.drawRect(const Rect.fromLTWH(40, 30, 80, 60), blockPaint);
-    canvas.drawRect(const Rect.fromLTWH(160, 60, 60, 90), blockPaint);
-    canvas.drawRect(const Rect.fromLTWH(240, 0, 80, 50), blockPaint);
+    canvas.drawRect(Rect.fromLTWH(36, 28, size.width * 0.2, size.height * 0.3),
+        blockPaint);
+    canvas.drawRect(
+        Rect.fromLTWH(size.width * 0.4, size.height * 0.26,
+            size.width * 0.14, size.height * 0.4),
+        blockPaint);
   }
 
   @override
@@ -737,15 +755,14 @@ class _RoutePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final path = Path()
-      ..moveTo(size.width * 0.57, size.height * 0.45)
+      ..moveTo(size.width * 0.52, size.height * 0.42)
       ..quadraticBezierTo(
-        size.width * 0.7,
-        size.height * 0.3,
-        size.width * 0.82,
-        size.height * 0.22,
+        size.width * 0.68,
+        size.height * 0.28,
+        size.width * 0.8,
+        size.height * 0.2,
       );
 
-    // Dashed effect
     const dashWidth = 8.0;
     const dashSpace = 5.0;
     final metrics = path.computeMetrics();

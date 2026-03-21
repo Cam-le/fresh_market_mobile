@@ -1,6 +1,6 @@
 # 🥦 Ăn Sạch Sống Khỏe - Fresh Market Flutter App
 
-A fresh food e-commerce app built with Flutter 3.x and Material 3 design, recreated from UI screenshots.
+A fresh food e-commerce app built with Flutter 3.x and Material 3 design.
 
 ## 📁 File Structure
 
@@ -29,46 +29,6 @@ fresh_market/
 │   └── images/                      # Place local images here
 └── pubspec.yaml
 ```
-
-## 🚀 How to Run
-
-### Prerequisites
-- Flutter SDK 3.x (stable channel)
-- Dart SDK ≥ 3.0.0
-- Xcode 14+ (for iOS)
-- CocoaPods
-
-### Steps
-
-1. **Get dependencies**
-   ```bash
-   cd fresh_market
-   flutter pub get
-   ```
-
-2. **iOS setup**
-   ```bash
-   cd ios
-   pod install
-   cd ..
-   ```
-
-3. **Run on iOS Simulator**
-   ```bash
-   flutter run -d "iPhone 15 Pro"
-   ```
-
-4. **Run on physical device**
-   ```bash
-   flutter devices          # list connected devices
-   flutter run -d <device-id>
-   ```
-
-5. **Build for release**
-   ```bash
-   flutter build ios --release
-   ```
-
 ## 🎨 Design Highlights
 
 | Feature | Implementation |
@@ -96,5 +56,4 @@ fresh_market/
 
 - Product images are loaded from Unsplash (requires internet)
 - The app uses `Portrait` orientation lock for mobile
-- Login/Signup use the split-screen layout matching your design screenshots
 - Footer widget (`AppFooter`) can be added to any scrollable list's bottom

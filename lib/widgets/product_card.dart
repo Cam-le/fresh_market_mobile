@@ -13,10 +13,10 @@ class ProductCard extends StatelessWidget {
   });
 
   String _formatPrice(double price) {
-    if (price >= 1000) {
-      return '${(price / 1000).toStringAsFixed(0)}k';
-    }
-    return price.toStringAsFixed(0);
+    final formatted = price
+        .toStringAsFixed(0)
+        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.');
+    return '${formatted}đ';
   }
 
   @override
@@ -36,122 +36,124 @@ class ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image with badge
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(10),
-                  topRight: Radius.circular(10),
-                ),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Image.network(
-                    product.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFFE8F5E9),
-                      child: const Icon(
-                        Icons.image_not_supported_outlined,
-                        color: AppTheme.primaryGreen,
-                        size: 32,
-                      ),
-                    ),
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
+          // Image — fills all space above the intrinsic content block
+          Expanded(
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(10),
+                    topRight: Radius.circular(10),
+                  ),
+                  child: SizedBox.expand(
+                    child: Image.network(
+                      product.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
                         color: const Color(0xFFE8F5E9),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            color: AppTheme.primaryGreen,
-                            strokeWidth: 2,
-                          ),
+                        child: const Icon(
+                          Icons.image_not_supported_outlined,
+                          color: AppTheme.primaryGreen,
+                          size: 28,
                         ),
-                      );
-                    },
+                      ),
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: const Color(0xFFE8F5E9),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primaryGreen,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-              if (product.isSale && product.discountPercent > 0)
+                if (product.isSale && product.discountPercent > 0)
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppTheme.discountRed,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '-${product.discountPercent.toInt()}%',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (product.isNew)
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentOrange,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'MỚI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
                 Positioned(
-                  top: 6,
-                  left: 6,
+                  top: 4,
+                  right: 4,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    width: 22,
+                    height: 22,
                     decoration: BoxDecoration(
-                      color: AppTheme.discountRed,
-                      borderRadius: BorderRadius.circular(4),
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 4,
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      '-${product.discountPercent.toInt()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              if (product.isNew)
-                Positioned(
-                  top: 6,
-                  left: 6,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentOrange,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'MỚI',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    child: const Icon(
+                      Icons.favorite_border,
+                      size: 12,
+                      color: AppTheme.textGray,
                     ),
                   ),
                 ),
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.favorite_border,
-                    size: 14,
-                    color: AppTheme.textGray,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          // Content
+          // Content — intrinsic height, never overflows
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   product.name,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textDark,
-                    height: 1.3,
+                    height: 1.2,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -159,72 +161,75 @@ class ProductCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   product.unit,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppTheme.textLight,
-                  ),
+                  style:
+                      const TextStyle(fontSize: 9, color: AppTheme.textLight),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 3),
-                // Rating
+                const SizedBox(height: 2),
                 Row(
                   children: [
-                    const Icon(Icons.star, size: 11, color: Color(0xFFFFC107)),
+                    const Icon(Icons.star, size: 10, color: Color(0xFFFFC107)),
                     const SizedBox(width: 2),
                     Text(
-                      product.rating.toString(),
+                      '${product.rating}',
                       style: const TextStyle(
-                          fontSize: 10, color: AppTheme.textGray),
+                          fontSize: 9, color: AppTheme.textGray),
                     ),
                     const SizedBox(width: 2),
-                    Text(
-                      '(${product.reviewCount})',
-                      style: const TextStyle(
-                          fontSize: 9, color: AppTheme.textLight),
+                    Flexible(
+                      child: Text(
+                        '(${product.reviewCount})',
+                        style: const TextStyle(
+                            fontSize: 8, color: AppTheme.textLight),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                // Price row
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '${_formatPrice(product.price)}đ',
+                            _formatPrice(product.price),
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.primaryGreen,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                           if (product.originalPrice != null)
                             Text(
-                              '${_formatPrice(product.originalPrice!)}đ',
+                              _formatPrice(product.originalPrice!),
                               style: const TextStyle(
-                                fontSize: 10,
+                                fontSize: 9,
                                 color: AppTheme.textLight,
                                 decoration: TextDecoration.lineThrough,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 4),
                     GestureDetector(
                       onTap: onAddToCart,
                       child: Container(
-                        width: 26,
-                        height: 26,
+                        width: 24,
+                        height: 24,
                         decoration: BoxDecoration(
                           color: AppTheme.primaryGreen,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 16,
-                        ),
+                        child: const Icon(Icons.add,
+                            color: Colors.white, size: 14),
                       ),
                     ),
                   ],

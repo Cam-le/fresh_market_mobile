@@ -203,7 +203,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           ..._methods.map((m) => _CardTile(
                 method: m,
                 onSetDefault: () => setState(() {
-                  for (final x in _methods) x.isDefault = false;
+                  for (final x in _methods) {
+                    x.isDefault = false;
+                  }
                   m.isDefault = true;
                 }),
                 onDelete: () => setState(() => _methods.remove(m)),

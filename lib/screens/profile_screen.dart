@@ -12,7 +12,7 @@ import 'orders_screen.dart';
 import 'settings_screen.dart';
 import 'edit_profile_screen.dart';
 import 'help_screen.dart';
-
+import 'change_password_screen.dart';
 import 'loyalty_screen.dart';
 import 'payment_methods_screen.dart';
 
@@ -31,6 +31,7 @@ class ProfileScreen extends StatelessWidget {
         final orderCount = appState.orders.length;
         final wishCount = appState.wishlist.count;
         final cartCount = appState.cart.itemCount;
+        final user = appState.user;
 
         return Scaffold(
           appBar: AppBar(
@@ -42,7 +43,6 @@ class ProfileScreen extends StatelessWidget {
                     onPressed: () => _go(context, const NotificationsScreen()),
                     icon: const Icon(Icons.notifications_outlined),
                   ),
-                  // Unread badge
                   Positioned(
                     right: 8,
                     top: 8,
@@ -67,55 +67,76 @@ class ProfileScreen extends StatelessWidget {
                 color: AppTheme.primaryGreen,
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 36,
-                          backgroundColor: Colors.white,
-                          child: Icon(Icons.person,
-                              size: 40, color: AppTheme.primaryGreen),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: const BoxDecoration(
-                              color: AppTheme.accentOrange,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.edit,
-                                size: 14, color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    // Avatar
+                    GestureDetector(
+                      onTap: () => _go(context, EditProfileScreen(appState: appState)),
+                      child: Stack(
                         children: [
-                          Text('Nguyễn Văn A',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700)),
-                          SizedBox(height: 4),
-                          Text('example@gmail.com',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 13)),
-                          SizedBox(height: 4),
-                          Text('📍 TP. Hồ Chí Minh',
-                              style: TextStyle(
-                                  color: Colors.white60, fontSize: 12)),
+                          CircleAvatar(
+                            radius: 34,
+                            backgroundColor: Colors.white,
+                            child: Icon(Icons.person,
+                                size: 38, color: AppTheme.primaryGreen),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              width: 22,
+                              height: 22,
+                              decoration: const BoxDecoration(
+                                color: AppTheme.accentOrange,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.edit,
+                                  size: 13, color: Colors.white),
+                            ),
+                          ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 14),
+                    // Name / email / city
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.name,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            user.email,
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          if (user.city.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              '📍 ${user.city}',
+                              style: const TextStyle(
+                                  color: Colors.white60, fontSize: 11),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    // VIP badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
+                          horizontal: 9, vertical: 5),
                       decoration: BoxDecoration(
                         color: AppTheme.accentOrange,
                         borderRadius: BorderRadius.circular(20),
@@ -123,12 +144,12 @@ class ProfileScreen extends StatelessWidget {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.stars, size: 12, color: Colors.white),
-                          SizedBox(width: 4),
+                          Icon(Icons.stars, size: 11, color: Colors.white),
+                          SizedBox(width: 3),
                           Text('VIP',
                               style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w700)),
                         ],
                       ),
@@ -136,10 +157,11 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              // Stats
+
+              // Stats row
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Row(
                   children: [
                     _StatItem(
@@ -148,29 +170,31 @@ class ProfileScreen extends StatelessWidget {
                         icon: Icons.shopping_bag_outlined,
                         onTap: () =>
                             _go(context, OrdersScreen(appState: appState))),
-                    _Divider(),
+                    _StatDivider(),
                     _StatItem(
                         value: '$cartCount',
                         label: 'Giỏ hàng',
                         icon: Icons.shopping_cart_outlined,
                         onTap: () {}),
-                    _Divider(),
+                    _StatDivider(),
                     _StatItem(
                         value: '$wishCount',
                         label: 'Yêu thích',
                         icon: Icons.favorite_border,
                         onTap: () =>
                             _go(context, WishlistScreen(appState: appState))),
-                    _Divider(),
+                    _StatDivider(),
                     _StatItem(
                         value: '250',
                         label: 'Điểm',
                         icon: Icons.stars_outlined,
-                        onTap: () {}),
+                        onTap: () => _go(context, const LoyaltyScreen())),
                   ],
                 ),
               ),
+
               const SizedBox(height: 8),
+
               // Loyalty bar
               Container(
                 color: Colors.white,
@@ -181,36 +205,39 @@ class ProfileScreen extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(Icons.workspace_premium,
-                            size: 18, color: AppTheme.accentOrange),
+                            size: 16, color: AppTheme.accentOrange),
                         const SizedBox(width: 6),
-                        const Text('Thành viên VIP',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w700)),
-                        const Spacer(),
+                        const Expanded(
+                          child: Text('Thành viên VIP',
+                              style: TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w700)),
+                        ),
                         Text('250 / 500 điểm',
                             style: TextStyle(
-                                fontSize: 12, color: Colors.grey[500])),
+                                fontSize: 11, color: Colors.grey[500])),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
+                      child: const LinearProgressIndicator(
                         value: 0.5,
-                        minHeight: 8,
-                        backgroundColor: const Color(0xFFE0E0E0),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
+                        minHeight: 7,
+                        backgroundColor: Color(0xFFE0E0E0),
+                        valueColor: AlwaysStoppedAnimation<Color>(
                             AppTheme.accentOrange),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5),
                     Text('Mua thêm 250.000₫ để lên hạng VIP+',
                         style:
-                            TextStyle(fontSize: 12, color: Colors.grey[500])),
+                            TextStyle(fontSize: 11, color: Colors.grey[500])),
                   ],
                 ),
               ),
+
               const SizedBox(height: 8),
+
               _MenuGroup(
                 title: 'ĐƠN HÀNG',
                 items: [
@@ -234,10 +261,17 @@ class ProfileScreen extends StatelessWidget {
                       onTap: () {}),
                 ],
               ),
+
               const SizedBox(height: 8),
+
               _MenuGroup(
                 title: 'TÀI KHOẢN',
                 items: [
+                  _MenuItem(
+                      icon: Icons.person_outline,
+                      label: 'Chỉnh sửa hồ sơ',
+                      onTap: () =>
+                          _go(context, EditProfileScreen(appState: appState))),
                   _MenuItem(
                       icon: Icons.favorite_border,
                       label: 'Sản phẩm yêu thích',
@@ -262,7 +296,9 @@ class ProfileScreen extends StatelessWidget {
                       onTap: () => _go(context, const LoyaltyScreen())),
                 ],
               ),
+
               const SizedBox(height: 8),
+
               _MenuGroup(
                 title: 'CÀI ĐẶT',
                 items: [
@@ -273,7 +309,8 @@ class ProfileScreen extends StatelessWidget {
                   _MenuItem(
                       icon: Icons.lock_outline,
                       label: 'Đổi mật khẩu',
-                      onTap: () {}),
+                      onTap: () =>
+                          _go(context, const ChangePasswordScreen())),
                   _MenuItem(
                       icon: Icons.language,
                       label: 'Ngôn ngữ',
@@ -295,7 +332,9 @@ class ProfileScreen extends StatelessWidget {
                       onTap: () {}),
                 ],
               ),
+
               const SizedBox(height: 8),
+
               Container(
                 color: Colors.white,
                 child: _MenuItem(
@@ -306,6 +345,7 @@ class ProfileScreen extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const LoginScreen())),
                 ),
               ),
+
               const SizedBox(height: 100),
             ],
           ),
@@ -315,10 +355,10 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _Divider extends StatelessWidget {
+class _StatDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
-      Container(width: 1, height: 40, color: const Color(0xFFEEEEEE));
+      Container(width: 1, height: 36, color: const Color(0xFFEEEEEE));
 }
 
 class _StatItem extends StatelessWidget {
@@ -338,17 +378,18 @@ class _StatItem extends StatelessWidget {
         child: GestureDetector(
           onTap: onTap,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 20, color: AppTheme.primaryGreen),
-              const SizedBox(height: 4),
+              Icon(icon, size: 18, color: AppTheme.primaryGreen),
+              const SizedBox(height: 3),
               Text(value,
                   style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: AppTheme.primaryGreen)),
               Text(label,
-                  style:
-                      const TextStyle(fontSize: 11, color: AppTheme.textGray)),
+                  style: const TextStyle(
+                      fontSize: 10, color: AppTheme.textGray)),
             ],
           ),
         ),
@@ -367,10 +408,10 @@ class _MenuGroup extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
               child: Text(title,
                   style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textLight,
                       letterSpacing: 0.8)),
@@ -404,28 +445,31 @@ class _MenuItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
                 color: (color ?? AppTheme.primaryGreen).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child:
-                  Icon(icon, size: 20, color: color ?? AppTheme.primaryGreen),
+              child: Icon(icon,
+                  size: 18, color: color ?? AppTheme.primaryGreen),
             ),
             const SizedBox(width: 12),
             Expanded(
                 child: Text(label,
                     style: TextStyle(
-                        fontSize: 15, color: c, fontWeight: FontWeight.w500))),
+                        fontSize: 14,
+                        color: c,
+                        fontWeight: FontWeight.w500))),
             if (badge != null)
               Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                margin: const EdgeInsets.only(right: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryGreen,
                   borderRadius: BorderRadius.circular(10),
@@ -433,15 +477,16 @@ class _MenuItem extends StatelessWidget {
                 child: Text(badge!,
                     style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.w700)),
               ),
             if (trailing != null)
               Text(trailing!,
-                  style:
-                      const TextStyle(fontSize: 13, color: AppTheme.textLight)),
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.textLight)),
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right, size: 18, color: AppTheme.textLight),
+            Icon(Icons.chevron_right,
+                size: 16, color: AppTheme.textLight),
           ],
         ),
       ),

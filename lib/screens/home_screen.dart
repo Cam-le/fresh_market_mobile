@@ -4,10 +4,10 @@ import '../models/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_section.dart';
 import '../widgets/promo_banner.dart';
+import '../widgets/app_footer.dart';
 import '../screens/cart_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/notifications_screen.dart';
-import '../widgets/flash_sale_section.dart';
 
 class HomeScreen extends StatefulWidget {
   final AppState appState;
@@ -20,6 +20,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
+    final categories = AppData.categories;
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -30,16 +32,23 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const SizedBox(height: 12),
                 _buildQuickCategories(),
-                const SizedBox(height: 12),
-                FlashSaleSection(appState: widget.appState),
-                const SizedBox(height: 4),
-                ...AppData.categories.map(
-                  (cat) =>
-                      CategorySection(category: cat, appState: widget.appState),
-                ),
-                const SizedBox(height: 16),
-                const PromoBanner(),
-                const SizedBox(height: 100),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+          // Each category as its own sliver to avoid unbounded height issues
+          for (final cat in categories)
+            SliverToBoxAdapter(
+              child: CategorySection(category: cat, appState: widget.appState),
+            ),
+          const SliverToBoxAdapter(
+            child: Column(
+              children: [
+                SizedBox(height: 8),
+                PromoBanner(),
+                SizedBox(height: 16),
+                AppFooter(),
+                SizedBox(height: 16),
               ],
             ),
           ),
@@ -54,70 +63,59 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, _) {
         final cartCount = widget.appState.cart.itemCount;
         return SliverAppBar(
-          expandedHeight: 180,
+          expandedHeight: 160,
           pinned: true,
           backgroundColor: const Color(0xFF75B06F),
           flexibleSpace: FlexibleSpaceBar(
             background: Stack(
+              fit: StackFit.expand,
               children: [
-                Positioned.fill(
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        Container(color: const Color(0xFF75B06F)),
-                  ),
+                Image.network(
+                  'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Container(color: const Color(0xFF75B06F)),
                 ),
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.darkGreen.withValues(alpha: 0.85),
-                          const Color(0xFF75B06F).withValues(alpha: 0.6),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.darkGreen.withValues(alpha: 0.9),
+                        const Color(0xFF75B06F).withValues(alpha: 0.65),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
                 ),
-                // Use LayoutBuilder to avoid overflow in the hero text area
-                const Positioned(
-                  left: 16,
-                  right: 120, // leave room for action buttons
-                  top: 50,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Ăn Sạch',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          height: 1.1,
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 100, 0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ăn Sạch · Sống Khỏe',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            height: 1.15,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        'Sống Khỏe',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          height: 1.1,
+                        SizedBox(height: 4),
+                        Text(
+                          'Thực phẩm sạch, tươi ngon mỗi ngày',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Thực phẩm sạch, tươi ngon mỗi ngày',
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -128,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'Ăn Sạch Sống Khỏe',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
             overflow: TextOverflow.ellipsis,
@@ -243,8 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return SizedBox(
-      // Increase height slightly to give the Column inside room to breathe
-      height: 88,
+      height: 86,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -252,18 +249,15 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () {},
-            child: Container(
-              width: 68,
-              margin: const EdgeInsets.only(right: 8),
-              // Use a Column with mainAxisSize.min so it never tries to
-              // expand beyond its natural height.
+            child: SizedBox(
+              width: 64,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 50,
+                    height: 50,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -278,14 +272,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     alignment: Alignment.center,
                     child: Text(
                       categories[index]['icon']!,
-                      style: const TextStyle(fontSize: 24),
+                      style: const TextStyle(fontSize: 22),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     categories[index]['label']!,
                     style: const TextStyle(
-                      fontSize: 10,
+                      fontSize: 9,
                       color: AppTheme.textGray,
                       fontWeight: FontWeight.w500,
                     ),

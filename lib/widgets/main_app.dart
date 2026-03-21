@@ -3,7 +3,7 @@ import '../models/app_state.dart';
 import '../screens/home_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/cart_screen.dart';
-import '../screens/orders_screen.dart';
+import '../screens/news_screen.dart';
 import '../screens/profile_screen.dart';
 import '../theme/app_theme.dart';
 
@@ -30,7 +30,7 @@ class _MainAppState extends State<MainApp> {
       HomeScreen(appState: _appState),
       SearchScreen(appState: _appState),
       CartScreen(appState: _appState),
-      OrdersScreen(appState: _appState),
+      const NewsScreen(),
       ProfileScreen(appState: _appState),
     ];
 
@@ -47,7 +47,10 @@ class _MainAppState extends State<MainApp> {
           bottomNavigationBar: Container(
             decoration: const BoxDecoration(
               boxShadow: [
-                BoxShadow(color: Color(0x1A000000), blurRadius: 12, offset: Offset(0, -3)),
+                BoxShadow(
+                    color: Color(0x1A000000),
+                    blurRadius: 12,
+                    offset: Offset(0, -3)),
               ],
             ),
             child: BottomNavigationBar(
@@ -69,9 +72,9 @@ class _MainAppState extends State<MainApp> {
                   label: 'Giỏ hàng',
                 ),
                 const BottomNavigationBarItem(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  activeIcon: Icon(Icons.receipt_long),
-                  label: 'Đơn hàng',
+                  icon: Icon(Icons.article_outlined),
+                  activeIcon: Icon(Icons.article),
+                  label: 'Tin tức',
                 ),
                 const BottomNavigationBarItem(
                   icon: Icon(Icons.person_outline),
@@ -110,7 +113,10 @@ class _CartIcon extends StatelessWidget {
               ),
               child: Text(
                 count > 9 ? '9+' : '$count',
-                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ),

@@ -15,6 +15,20 @@ class CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Derive childAspectRatio from actual screen width so it works on any device.
+    // card width  = (screenWidth - gridPadding×2 - gap×3) / 4
+    // card height = cardWidth (image, 1:1) + contentHeight (fixed text block)
+    const double gridPadding = 12;
+    const double gap = 8;
+    const int columns = 4;
+    // 88dp accounts for: name (2 lines) + unit + rating + price row + paddings
+    const double contentHeight = 88;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth =
+        (screenWidth - gridPadding * 2 - gap * (columns - 1)) / columns;
+    final aspectRatio = cardWidth / (cardWidth + contentHeight);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -59,12 +73,12 @@ class CategorySection extends StatelessWidget {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            childAspectRatio: 0.62,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
+          padding: const EdgeInsets.symmetric(horizontal: gridPadding),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            childAspectRatio: aspectRatio,
+            crossAxisSpacing: gap,
+            mainAxisSpacing: gap,
           ),
           itemCount: category.products.length,
           itemBuilder: (context, index) {
