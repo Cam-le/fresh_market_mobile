@@ -36,7 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          // Each category as its own sliver to avoid unbounded height issues
           for (final cat in categories)
             SliverToBoxAdapter(
               child: CategorySection(category: cat, appState: widget.appState),
@@ -46,9 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 SizedBox(height: 8),
                 PromoBanner(),
-                SizedBox(height: 16),
+                SizedBox(height: 24),
                 AppFooter(),
-                SizedBox(height: 16),
+                SizedBox(height: 80),
               ],
             ),
           ),
@@ -229,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickCategories() {
-    final categories = [
+    final cats = [
       {'icon': '🥦', 'label': 'Rau củ'},
       {'icon': '🍎', 'label': 'Trái cây'},
       {'icon': '🐟', 'label': 'Hải sản'},
@@ -245,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: categories.length,
+        itemCount: cats.length,
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () {},
@@ -271,13 +270,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      categories[index]['icon']!,
+                      cats[index]['icon']!,
                       style: const TextStyle(fontSize: 22),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    categories[index]['label']!,
+                    cats[index]['label']!,
                     style: const TextStyle(
                       fontSize: 9,
                       color: AppTheme.textGray,

@@ -155,37 +155,39 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 32),
 
               // Demo accounts hint
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.info_outline,
-                            size: 14, color: AppTheme.primaryGreen),
-                        SizedBox(width: 6),
-                        Text(
-                          'Tài khoản demo',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primaryGreen,
+              IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 14, color: AppTheme.primaryGreen),
+                          SizedBox(width: 6),
+                          Text(
+                            'Tài khoản demo',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.primaryGreen,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    _demoRow('user@example.com', '123456'),
-                    const SizedBox(height: 2),
-                    _demoRow('admin@anchsanhkhoe.vn', 'Admin@123'),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      _demoRow('user@example.com', '123456'),
+                      const SizedBox(height: 2),
+                      _demoRow('admin@anchsanhkhoe.vn', 'Admin@123'),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

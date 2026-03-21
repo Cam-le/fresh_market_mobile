@@ -74,7 +74,7 @@ class _MainAppState extends State<MainApp> {
                 const BottomNavigationBarItem(
                   icon: Icon(Icons.article_outlined),
                   activeIcon: Icon(Icons.article),
-                  label: 'Tin tức',
+                  label: 'Tin Tức',
                 ),
                 const BottomNavigationBarItem(
                   icon: Icon(Icons.person_outline),
