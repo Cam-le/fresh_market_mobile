@@ -15,6 +15,8 @@ import 'help_screen.dart';
 import 'change_password_screen.dart';
 import 'loyalty_screen.dart';
 import 'payment_methods_screen.dart';
+import 'cart_screen.dart';
+import 'about_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final AppState appState;
@@ -175,7 +177,7 @@ class ProfileScreen extends StatelessWidget {
                         value: '$cartCount',
                         label: 'Giỏ hàng',
                         icon: Icons.shopping_cart_outlined,
-                        onTap: () {}),
+                        onTap: () => _go(context, CartScreen(appState: appState))),
                     _StatDivider(),
                     _StatItem(
                         value: '$wishCount',
@@ -185,10 +187,10 @@ class ProfileScreen extends StatelessWidget {
                             _go(context, WishlistScreen(appState: appState))),
                     _StatDivider(),
                     _StatItem(
-                        value: '250',
+                        value: '${appState.loyaltyPoints}',
                         label: 'Điểm',
                         icon: Icons.stars_outlined,
-                        onTap: () => _go(context, const LoyaltyScreen())),
+                        onTap: () => _go(context, LoyaltyScreen(appState: appState))),
                   ],
                 ),
               ),
@@ -212,7 +214,7 @@ class ProfileScreen extends StatelessWidget {
                               style: TextStyle(
                                   fontSize: 13, fontWeight: FontWeight.w700)),
                         ),
-                        Text('250 / 500 điểm',
+                        Text('${appState.loyaltyPoints} / 500 điểm',
                             style: TextStyle(
                                 fontSize: 11, color: Colors.grey[500])),
                       ],
@@ -220,8 +222,8 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
-                      child: const LinearProgressIndicator(
-                        value: 0.5,
+                      child: LinearProgressIndicator(
+                        value: (appState.loyaltyPoints / 500).clamp(0.0, 1.0),
                         minHeight: 7,
                         backgroundColor: Color(0xFFE0E0E0),
                         valueColor: AlwaysStoppedAnimation<Color>(
@@ -250,15 +252,69 @@ class ProfileScreen extends StatelessWidget {
                   _MenuItem(
                       icon: Icons.local_shipping_outlined,
                       label: 'Theo dõi đơn hàng',
-                      onTap: () {}),
+                      onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Theo dõi đơn hàng'),
+                        content: const Text(
+                          'Chức năng theo dõi thời gian thực sẽ khả dụng sau khi tích hợp đơn vị vận chuyển. '
+                          'Hiện tại, bạn có thể xem trạng thái đơn hàng trong mục Đơn hàng của tôi.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Đóng'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _go(context, OrdersScreen(appState: appState));
+                            },
+                            child: const Text('Xem đơn hàng'),
+                          ),
+                        ],
+                      ),
+                    )),
                   _MenuItem(
                       icon: Icons.assignment_return_outlined,
                       label: 'Đổi trả hàng',
-                      onTap: () {}),
+                      onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Chính sách đổi trả'),
+                        content: const Text(
+                          '• Đổi trả trong vòng 24 giờ kể từ khi nhận hàng\n'
+                          '• Sản phẩm còn nguyên vẹn, chưa qua sử dụng\n'
+                          '• Liên hệ hotline 1800 1234 hoặc chat với chúng tôi\n\n'
+                          'Chức năng tạo yêu cầu đổi trả trực tuyến sẽ sớm ra mắt.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Đóng'),
+                          ),
+                        ],
+                      ),
+                    )),
                   _MenuItem(
                       icon: Icons.rate_review_outlined,
                       label: 'Đánh giá của tôi',
-                      onTap: () {}),
+                      onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Đánh giá của tôi'),
+                        content: const Text(
+                          'Bạn chưa có đánh giá nào. Hãy mua sắm và chia sẻ '
+                          'cảm nhận về sản phẩm để giúp cộng đồng nhé!',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Đóng'),
+                          ),
+                        ],
+                      ),
+                    )),
                 ],
               ),
 
@@ -292,8 +348,8 @@ class ProfileScreen extends StatelessWidget {
                       onTap: () => _go(context, const PromoCodeScreen())),
                   _MenuItem(
                       icon: Icons.stars_outlined,
-                      label: 'Điểm tích lũy (250đ)',
-                      onTap: () => _go(context, const LoyaltyScreen())),
+                      label: 'Điểm tích lũy (${appState.loyaltyPoints}đ)',
+                      onTap: () => _go(context, LoyaltyScreen(appState: appState))),
                 ],
               ),
 
@@ -315,7 +371,7 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.language,
                       label: 'Ngôn ngữ',
                       trailing: 'Tiếng Việt',
-                      onTap: () {}),
+                      onTap: () => _go(context, const SettingsScreen())),
                   _MenuItem(
                       icon: Icons.dark_mode_outlined,
                       label: 'Giao diện',
@@ -329,7 +385,7 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.info_outline,
                       label: 'Về ứng dụng',
                       trailing: 'v1.0.0',
-                      onTap: () {}),
+                      onTap: () => _go(context, const AboutScreen())),
                 ],
               ),
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../models/app_state.dart';
 
 class LoyaltyScreen extends StatefulWidget {
-  const LoyaltyScreen({super.key});
+  final AppState? appState;
+  const LoyaltyScreen({super.key, this.appState});
 
   @override
   State<LoyaltyScreen> createState() => _LoyaltyScreenState();
@@ -12,11 +14,12 @@ class _LoyaltyScreenState extends State<LoyaltyScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  static const int _totalPoints = 1250;
   static const int _nextTierPoints = 2000;
 
+  int get _totalPoints => widget.appState?.loyaltyPoints ?? 1250;
+
   // static final (not const) because Color is not a const value at compile time
-  static final List<_PointEvent> _history = [
+  static final List<_PointEvent> _baseHistory = [
     _PointEvent(
         title: 'Đơn hàng #ORD001',
         points: 150,
@@ -58,6 +61,23 @@ class _LoyaltyScreenState extends State<LoyaltyScreen>
         date: '20/01/2026',
         type: _EventType.earn),
   ];
+
+  List<_PointEvent> get _history {
+    final sessionEvents = <_PointEvent>[];
+    if (widget.appState != null) {
+      for (final order in widget.appState!.orders) {
+        final pts = (order.total / 1000).floor();
+        sessionEvents.add(_PointEvent(
+          title: 'Đơn hàng #\${order.id.substring(3, 11)}',
+          points: pts,
+          date:
+              "${order.createdAt.day.toString().padLeft(2, '0')}/${order.createdAt.month.toString().padLeft(2, '0')}/${order.createdAt.year}",
+          type: _EventType.earn,
+        ));
+      }
+    }
+    return [...sessionEvents, ..._baseHistory];
+  }
 
   static final List<_Reward> _rewards = [
     _Reward(
@@ -138,7 +158,7 @@ class _LoyaltyScreenState extends State<LoyaltyScreen>
   }
 
   Widget _buildPointsHeader() {
-    const pct = _totalPoints / _nextTierPoints;
+    final pct = (_totalPoints / _nextTierPoints).clamp(0.0, 1.0);
 
     return Container(
       color: AppTheme.primaryGreen,
@@ -146,22 +166,22 @@ class _LoyaltyScreenState extends State<LoyaltyScreen>
       child: Column(
         children: [
           // Points display
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Icon(Icons.stars, color: AppTheme.accentOrange, size: 32),
-              SizedBox(width: 8),
+              const Icon(Icons.stars, color: AppTheme.accentOrange, size: 32),
+              const SizedBox(width: 8),
               Text(
                 '$_totalPoints',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 52,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                   height: 1,
                 ),
               ),
-              Padding(
+              const Padding(
                 padding: EdgeInsets.only(bottom: 8),
                 child: Text(
                   ' điểm',
@@ -212,9 +232,9 @@ class _LoyaltyScreenState extends State<LoyaltyScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Cần thêm ${_nextTierPoints - _totalPoints} điểm để lên hạng VIP+',
-                  style: TextStyle(fontSize: 12, color: Colors.white70),
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
                 ),
               ],
             ),

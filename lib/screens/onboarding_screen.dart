@@ -54,6 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _finish() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('seen_onboarding', true);
+    if (!mounted) return; // ← add this line
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (_, a, __) => const MainApp(),

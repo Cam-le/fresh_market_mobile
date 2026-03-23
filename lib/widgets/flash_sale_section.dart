@@ -35,8 +35,9 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
     _remaining = _endTime.difference(DateTime.now());
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       final r = _endTime.difference(DateTime.now());
-      if (mounted)
+      if (mounted) {
         setState(() => _remaining = r.isNegative ? Duration.zero : r);
+      }
     });
   }
 

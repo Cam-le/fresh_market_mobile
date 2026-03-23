@@ -273,7 +273,14 @@ class _SocialBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Expanded(
         child: GestureDetector(
-          onTap: () {},
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Đang mở trang $label... (demo)'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(

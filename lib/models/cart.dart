@@ -37,6 +37,11 @@ class CartModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Restores a specific quantity without notifying (used during cache load).
+  void forceSet(Product product, int qty) {
+    if (qty > 0) _items[product.id] = CartItem(product: product, quantity: qty);
+  }
+
   void remove(String productId) {
     _items.remove(productId);
     notifyListeners();

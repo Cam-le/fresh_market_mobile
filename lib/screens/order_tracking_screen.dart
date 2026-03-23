@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/order.dart';
 import '../models/cart.dart';
+import '../models/app_state.dart';
 import '../theme/app_theme.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final Order order;
+  final AppState? appState;
 
-  const OrderTrackingScreen({super.key, required this.order});
+  const OrderTrackingScreen({super.key, required this.order, this.appState});
 
   @override
   State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
@@ -77,11 +79,106 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   }
 
   String _formatPrice(double p) =>
-      p
-          .toStringAsFixed(0)
-          .replaceAllMapped(
-              RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.') +
-      '₫';
+      '${p.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.')}₫';
+
+  void _showSupport(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Liên hệ hỗ trợ',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            const Text('Đội ngũ hỗ trợ luôn sẵn sàng giúp bạn 24/7',
+                style: TextStyle(fontSize: 13, color: Color(0xFF757575))),
+            const SizedBox(height: 20),
+            _SupportTile(
+              icon: Icons.phone_outlined,
+              color: const Color(0xFF5B8A3C),
+              title: 'Gọi điện',
+              subtitle: '1800 1234 (miễn phí)',
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Đang kết nối tổng đài 1800 1234... (demo)'),
+                  behavior: SnackBarBehavior.floating,
+                ));
+              },
+            ),
+            const SizedBox(height: 12),
+            _SupportTile(
+              icon: Icons.chat_bubble_outline,
+              color: const Color(0xFF00897B),
+              title: 'Chat trực tuyến',
+              subtitle: 'Phản hồi trong vòng 2 phút',
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Đang mở cửa sổ chat... (demo)'),
+                  behavior: SnackBarBehavior.floating,
+                ));
+              },
+            ),
+            const SizedBox(height: 12),
+            _SupportTile(
+              icon: Icons.email_outlined,
+              color: const Color(0xFF1565C0),
+              title: 'Email',
+              subtitle: 'hotro@anchsanhkhoe.vn',
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Đã sao chép email hỗ trợ (demo)'),
+                  behavior: SnackBarBehavior.floating,
+                ));
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmCancel(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Huỷ đơn hàng?'),
+        content: Text(
+          'Bạn có chắc muốn huỷ đơn hàng ${widget.order.id} không?\n\nThao tác này không thể hoàn tác.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Không'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              widget.appState?.cancelOrder(widget.order.id);
+              Navigator.pop(context);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Đã huỷ đơn hàng'),
+                behavior: SnackBarBehavior.floating,
+              ));
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE53935)),
+            child: const Text('Xác nhận huỷ',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +187,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         title: const Text('Theo dõi đơn hàng'),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => _showSupport(context),
             icon: const Icon(Icons.headset_mic_outlined),
             tooltip: 'Liên hệ hỗ trợ',
           ),
@@ -176,8 +273,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                               blurRadius: 8)
                         ],
                       ),
-                      child: const Icon(Icons.home,
-                          color: Colors.white, size: 18),
+                      child:
+                          const Icon(Icons.home, color: Colors.white, size: 18),
                     ),
                     Container(
                         width: 2, height: 10, color: AppTheme.primaryGreen),
@@ -185,8 +282,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                       width: 7,
                       height: 7,
                       decoration: const BoxDecoration(
-                          color: AppTheme.primaryGreen,
-                          shape: BoxShape.circle),
+                          color: AppTheme.primaryGreen, shape: BoxShape.circle),
                     ),
                   ],
                 ),
@@ -265,8 +361,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                           children: [
                             Text('Nguyễn Văn B',
                                 style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700)),
+                                    fontSize: 13, fontWeight: FontWeight.w700)),
                             Row(
                               children: [
                                 Icon(Icons.star,
@@ -281,10 +376,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                         ),
                       ),
                       _CircleAction(
-                          icon: Icons.phone_outlined, onTap: () {}),
+                          icon: Icons.phone_outlined,
+                          onTap: () => _showSupport(context)),
                       const SizedBox(width: 8),
                       _CircleAction(
-                          icon: Icons.chat_bubble_outline, onTap: () {}),
+                          icon: Icons.chat_bubble_outline,
+                          onTap: () => _showSupport(context)),
                     ],
                   ),
                 ),
@@ -304,8 +401,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -324,8 +420,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppTheme.accentOrange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -371,8 +466,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                             color: AppTheme.accentOrange,
                             fontWeight: FontWeight.w700)),
                     Text('Đã giao',
-                        style: TextStyle(
-                            fontSize: 9, color: Colors.grey[400])),
+                        style: TextStyle(fontSize: 9, color: Colors.grey[400])),
                   ],
                 ),
               ],
@@ -408,8 +502,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -436,8 +529,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -483,19 +575,16 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-              color: Color(0x1A000000),
-              blurRadius: 12,
-              offset: Offset(0, -3))
+              color: Color(0x1A000000), blurRadius: 12, offset: Offset(0, -3))
         ],
       ),
       child: Row(
         children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: () => _showSupport(context),
               icon: const Icon(Icons.headset_mic_outlined, size: 16),
-              label: const Text('Hỗ trợ',
-                  style: TextStyle(fontSize: 13)),
+              label: const Text('Hỗ trợ', style: TextStyle(fontSize: 13)),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(0, 46),
                 foregroundColor: AppTheme.primaryGreen,
@@ -509,10 +598,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           Expanded(
             flex: 2,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () => _confirmCancel(context),
               icon: const Icon(Icons.cancel_outlined, size: 16),
-              label: const Text('Huỷ đơn hàng',
-                  style: TextStyle(fontSize: 13)),
+              label: const Text('Huỷ đơn hàng', style: TextStyle(fontSize: 13)),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(0, 46),
                 backgroundColor: AppTheme.discountRed,
@@ -572,11 +660,10 @@ class _TimelineRow extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: color.withValues(
-                    alpha: isDone || isActive ? 0.15 : 0.05),
+                color:
+                    color.withValues(alpha: isDone || isActive ? 0.15 : 0.05),
                 shape: BoxShape.circle,
-                border: Border.all(
-                    color: color, width: isActive ? 2 : 1.5),
+                border: Border.all(color: color, width: isActive ? 2 : 1.5),
               ),
               child: Icon(step.icon, size: 16, color: color),
             ),
@@ -608,9 +695,8 @@ class _TimelineRow extends StatelessWidget {
                         step.title,
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: isActive
-                              ? FontWeight.w700
-                              : FontWeight.w600,
+                          fontWeight:
+                              isActive ? FontWeight.w700 : FontWeight.w600,
                           color: isActive
                               ? AppTheme.accentOrange
                               : isDone
@@ -622,8 +708,7 @@ class _TimelineRow extends StatelessWidget {
                     if (step.time.isNotEmpty)
                       Text(step.time,
                           style: const TextStyle(
-                              fontSize: 11,
-                              color: AppTheme.textLight)),
+                              fontSize: 11, color: AppTheme.textLight)),
                   ],
                 ),
                 const SizedBox(height: 2),
@@ -631,9 +716,7 @@ class _TimelineRow extends StatelessWidget {
                   step.subtitle,
                   style: TextStyle(
                     fontSize: 11,
-                    color: isActive
-                        ? AppTheme.textGray
-                        : AppTheme.textLight,
+                    color: isActive ? AppTheme.textGray : AppTheme.textLight,
                     height: 1.4,
                   ),
                 ),
@@ -733,11 +816,11 @@ class _MapGridPainter extends CustomPainter {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
     final blockPaint = Paint()..color = const Color(0xFFC5DFC5);
-    canvas.drawRect(Rect.fromLTWH(36, 28, size.width * 0.2, size.height * 0.3),
-        blockPaint);
     canvas.drawRect(
-        Rect.fromLTWH(size.width * 0.4, size.height * 0.26,
-            size.width * 0.14, size.height * 0.4),
+        Rect.fromLTWH(36, 28, size.width * 0.2, size.height * 0.3), blockPaint);
+    canvas.drawRect(
+        Rect.fromLTWH(size.width * 0.4, size.height * 0.26, size.width * 0.14,
+            size.height * 0.4),
         blockPaint);
   }
 
@@ -780,4 +863,63 @@ class _RoutePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_) => false;
+}
+
+class _SupportTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SupportTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFE0E0E0)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600)),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF757575))),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey[400], size: 18),
+          ],
+        ),
+      ),
+    );
+  }
 }

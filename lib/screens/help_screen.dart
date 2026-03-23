@@ -71,7 +71,12 @@ class _HelpScreenState extends State<HelpScreen> {
                 label: 'Hotline',
                 sub: '1800 1234',
                 color: AppTheme.primaryGreen,
-                onTap: () {},
+                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đang kết nối tổng đài 1800 1234... (demo)'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               _ContactCard(
@@ -87,7 +92,12 @@ class _HelpScreenState extends State<HelpScreen> {
                 label: 'Email',
                 sub: 'support@...',
                 color: const Color(0xFF8E24AA),
-                onTap: () {},
+                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Email: hotro@anchsanhkhoe.vn — đã sao chép (demo)'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                ),
               ),
             ],
           ),

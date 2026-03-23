@@ -8,6 +8,7 @@ import '../widgets/app_footer.dart';
 import '../screens/cart_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/notifications_screen.dart';
+import '../screens/category_browse_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final AppState appState;
@@ -228,15 +229,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickCategories() {
+    // id: null means "show all products in search"; mapped IDs open CategoryBrowseScreen
     final cats = [
-      {'icon': '🥦', 'label': 'Rau củ'},
-      {'icon': '🍎', 'label': 'Trái cây'},
-      {'icon': '🐟', 'label': 'Hải sản'},
-      {'icon': '🥩', 'label': 'Thịt'},
-      {'icon': '🥚', 'label': 'Trứng'},
-      {'icon': '🧀', 'label': 'Sữa'},
-      {'icon': '🌾', 'label': 'Ngũ cốc'},
-      {'icon': '🥜', 'label': 'Đậu'},
+      {'icon': '🥦', 'label': 'Rau củ', 'id': 'rau_cu'},
+      {'icon': '🍎', 'label': 'Trái cây', 'id': 'trai_cay'},
+      {'icon': '🐟', 'label': 'Hải sản', 'id': 'hai_san'},
+      {'icon': '🥩', 'label': 'Thịt', 'id': 'thit'},
+      {'icon': '🥚', 'label': 'Trứng', 'id': 'thit'},
+      {'icon': '🧀', 'label': 'Sữa', 'id': 'rau_cu'},
+      {'icon': '🌾', 'label': 'Ngũ cốc', 'id': 'trai_cay'},
+      {'icon': '🥜', 'label': 'Đậu', 'id': 'rau_cu'},
     ];
 
     return SizedBox(
@@ -247,7 +249,24 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: cats.length,
         itemBuilder: (context, index) {
           return GestureDetector(
-            onTap: () {},
+            onTap: () {
+              final catId = cats[index]['id'];
+              if (catId != null) {
+                final category = AppData.categories.firstWhere(
+                  (c) => c.id == catId,
+                  orElse: () => AppData.categories.first,
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CategoryBrowseScreen(
+                      category: category,
+                      appState: widget.appState,
+                    ),
+                  ),
+                );
+              }
+            },
             child: SizedBox(
               width: 64,
               child: Column(

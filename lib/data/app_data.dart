@@ -248,6 +248,9 @@ class AppData {
     ),
   ];
 
+  static List<Product> get allProducts =>
+      [...vegetables, ...fruits, ...seafood, ...meat];
+
   static List<ProductCategory> get categories => [
         const ProductCategory(
           id: 'rau_cu',

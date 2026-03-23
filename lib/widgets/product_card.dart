@@ -16,7 +16,7 @@ class ProductCard extends StatelessWidget {
     final formatted = price
         .toStringAsFixed(0)
         .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.');
-    return '${formatted}đ';
+    return '$formattedđ';
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
+import 'services/session_cache.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -9,6 +10,8 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  // Expire session data that is older than 30 minutes.
+  await SessionCache.init();
   runApp(const FreshMarketApp());
 }
 

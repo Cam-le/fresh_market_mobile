@@ -99,10 +99,7 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
   }
 
   String _formatPrice(int p) =>
-      p
-          .toString()
-          .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.') +
-      '₫';
+      '${p.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.')}₫';
 
   List<_Voucher> get _available => _vouchers.where((v) => !v.isUsed).toList();
   List<_Voucher> get _used => _vouchers.where((v) => v.isUsed).toList();

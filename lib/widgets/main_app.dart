@@ -19,6 +19,12 @@ class _MainAppState extends State<MainApp> {
   final AppState _appState = AppState();
 
   @override
+  void initState() {
+    super.initState();
+    _appState.loadFromCache();
+  }
+
+  @override
   void dispose() {
     _appState.dispose();
     super.dispose();

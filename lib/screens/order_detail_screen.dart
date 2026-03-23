@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/order.dart';
 import '../models/cart.dart';
+import '../models/app_state.dart';
 import '../theme/app_theme.dart';
 import 'order_tracking_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final Order order;
+  final AppState? appState;
 
-  const OrderDetailScreen({super.key, required this.order});
+  const OrderDetailScreen({super.key, required this.order, this.appState});
 
   String _fmt(double p) =>
-      p
-          .toStringAsFixed(0)
-          .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.') +
-      '₫';
+      '${p.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.')}₫';
 
   String _fmtDate(DateTime dt) =>
       '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}  '
@@ -98,7 +97,8 @@ class OrderDetailScreen extends StatelessWidget {
                     onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => OrderTrackingScreen(order: order))),
+                            builder: (_) => OrderTrackingScreen(
+                                order: order, appState: appState))),
                     icon: const Icon(Icons.gps_fixed, size: 14),
                     label:
                         const Text('Theo dõi', style: TextStyle(fontSize: 12)),
@@ -231,7 +231,16 @@ class OrderDetailScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      appState?.reorder(order);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Đã thêm sản phẩm vào giỏ hàng'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    },
                     icon: const Icon(Icons.replay, size: 18),
                     label: const Text('Mua lại',
                         style: TextStyle(
@@ -243,10 +252,7 @@ class OrderDetailScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 52,
                   child: OutlinedButton.icon(
-                    onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => OrderTrackingScreen(order: order))),
+                    onPressed: () => _showReviewDialog(context),
                     icon: const Icon(Icons.star_outline, size: 18),
                     label: const Text('Đánh giá sản phẩm',
                         style: TextStyle(
@@ -267,7 +273,7 @@ class OrderDetailScreen extends StatelessWidget {
               width: double.infinity,
               height: 52,
               child: OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: () => _confirmCancel(context),
                 icon: const Icon(Icons.cancel_outlined, size: 18),
                 label: const Text('Huỷ đơn hàng',
                     style:
@@ -300,6 +306,101 @@ class OrderDetailScreen extends StatelessWidget {
       case OrderStatus.cancelled:
         return Icons.cancel_outlined;
     }
+  }
+
+  void _confirmCancel(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Huỷ đơn hàng?'),
+        content: const Text('Bạn có chắc muốn huỷ đơn hàng này không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Không'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              appState?.cancelOrder(order.id);
+              Navigator.pop(context);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Đã huỷ đơn hàng'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            style:
+                ElevatedButton.styleFrom(backgroundColor: AppTheme.discountRed),
+            child: const Text('Xác nhận huỷ',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReviewDialog(BuildContext context) {
+    int rating = 5;
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: const Text('Đánh giá sản phẩm'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Chọn số sao:', style: TextStyle(fontSize: 13)),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                    5,
+                    (i) => GestureDetector(
+                          onTap: () => setDlg(() => rating = i + 1),
+                          child: Icon(
+                            i < rating ? Icons.star : Icons.star_border,
+                            color: AppTheme.accentOrange,
+                            size: 32,
+                          ),
+                        )),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Nhận xét của bạn...',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.all(10),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Cảm ơn bạn đã đánh giá!'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: const Text('Gửi đánh giá'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

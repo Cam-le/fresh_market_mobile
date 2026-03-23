@@ -107,7 +107,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             iconColor: const Color(0xFF6D4C41),
             title: 'Cỡ chữ',
             trailing: 'Trung bình',
-            onTap: () {},
+            onTap: () => showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Cỡ chữ'),
+                content: const Text(
+                  'Tính năng thay đổi cỡ chữ sẽ có trong bản cập nhật tiếp theo.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Đóng'),
+                  ),
+                ],
+              ),
+            ),
           ),
           const Divider(height: 8),
 
@@ -187,7 +201,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
             iconColor: const Color(0xFF546E7A),
             title: 'Thiết bị đã đăng nhập',
             trailing: '2 thiết bị',
-            onTap: () {},
+            onTap: () => showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Thiết bị đã đăng nhập'),
+                content: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading:
+                          Icon(Icons.phone_android, color: Color(0xFF5B8A3C)),
+                      title: Text('iPhone 15 Pro',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600)),
+                      subtitle: Text('TP.HCM • Đang hoạt động',
+                          style: TextStyle(fontSize: 12)),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.laptop_mac, color: Color(0xFF757575)),
+                      title: Text('MacBook Pro',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600)),
+                      subtitle: Text('TP.HCM • 2 ngày trước',
+                          style: TextStyle(fontSize: 12)),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Đóng'),
+                  ),
+                ],
+              ),
+            ),
           ),
           const Divider(height: 8),
 
@@ -198,7 +247,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             iconColor: AppTheme.accentOrange,
             title: 'Quyền truy cập vị trí',
             trailing: 'Khi dùng app',
-            onTap: () {},
+            onTap: () => showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Quyền truy cập vị trí'),
+                content: const Text(
+                  'Ứng dụng dùng vị trí của bạn để gợi ý cửa hàng gần nhất '
+                  'và tính phí giao hàng chính xác hơn.\n\n'
+                  'Để thay đổi quyền, vào Cài đặt hệ thống > Ứng dụng.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Đóng'),
+                  ),
+                ],
+              ),
+            ),
           ),
           _NavigateTile(
             icon: Icons.delete_outline,
@@ -239,19 +304,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.policy_outlined,
             iconColor: const Color(0xFF37474F),
             title: 'Chính sách bảo mật',
-            onTap: () {},
+            onTap: () => showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Chính sách bảo mật'),
+                content: const SingleChildScrollView(
+                  child: Text(
+                    'Ăn Sạch Sống Khỏe cam kết bảo vệ thông tin cá nhân của bạn.\n\n'
+                    '• Chúng tôi chỉ thu thập thông tin cần thiết để xử lý đơn hàng.\n'
+                    '• Thông tin của bạn không bao giờ được bán cho bên thứ ba.\n'
+                    '• Bạn có thể yêu cầu xóa dữ liệu bất kỳ lúc nào.\n'
+                    '• Dữ liệu được mã hóa và lưu trữ an toàn trên máy chủ đặt tại Việt Nam.\n\n'
+                    'Để biết thêm chi tiết, vui lòng liên hệ: privacy@anchsanhkhoe.vn',
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Đóng'),
+                  ),
+                ],
+              ),
+            ),
           ),
           _NavigateTile(
             icon: Icons.article_outlined,
             iconColor: const Color(0xFF37474F),
             title: 'Điều khoản sử dụng',
-            onTap: () {},
+            onTap: () => showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Điều khoản sử dụng'),
+                content: const SingleChildScrollView(
+                  child: Text(
+                    'Bằng cách sử dụng ứng dụng Ăn Sạch Sống Khỏe, bạn đồng ý:\n\n'
+                    '• Cung cấp thông tin chính xác khi đặt hàng.\n'
+                    '• Không sử dụng ứng dụng cho mục đích gian lận.\n'
+                    '• Tuân thủ chính sách hoàn trả và đổi hàng.\n'
+                    '• Thanh toán đầy đủ theo giá niêm yết.\n\n'
+                    'Chúng tôi có quyền tạm ngưng tài khoản vi phạm điều khoản.\n\n'
+                    'Phiên bản điều khoản: 1.0 — Có hiệu lực từ 01/01/2026',
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Đóng'),
+                  ),
+                ],
+              ),
+            ),
           ),
           _NavigateTile(
             icon: Icons.star_rate_outlined,
             iconColor: AppTheme.accentOrange,
             title: 'Đánh giá ứng dụng',
-            onTap: () {},
+            onTap: () {
+              int stars = 5;
+              showDialog(
+                context: context,
+                builder: (_) => StatefulBuilder(
+                  builder: (ctx, setDlg) => AlertDialog(
+                    title: const Text('Đánh giá ứng dụng'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Bạn thấy Ăn Sạch Sống Khỏe thế nào?',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            5,
+                            (i) => GestureDetector(
+                              onTap: () => setDlg(() => stars = i + 1),
+                              child: Icon(
+                                i < stars ? Icons.star : Icons.star_border,
+                                color: AppTheme.accentOrange,
+                                size: 36,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Để sau'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Cảm ơn bạn đã đánh giá! ⭐'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Text('Gửi đánh giá'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 40),
           Center(

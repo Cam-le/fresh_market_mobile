@@ -31,6 +31,69 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _showForgotPassword() {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Quên mật khẩu'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Nhập email của bạn để nhận link đặt lại mật khẩu.'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Link đặt lại mật khẩu đã được gửi (demo)'),
+                behavior: SnackBarBehavior.floating,
+              ));
+            },
+            child: const Text('Gửi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSocialDemo(String provider) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Đăng nhập với $provider'),
+        content: Text(
+          'Tính năng đăng nhập với $provider đang được phát triển.\n\n'
+          'Vui lòng dùng tài khoản demo:\n'
+          'Email: user@example.com\n'
+          'Mật khẩu: 123456',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -284,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const Spacer(),
                   GestureDetector(
-                    onTap: () {},
+                    onTap: () => _showForgotPassword(),
                     child: const Text(
                       'Quên Mật Khẩu?',
                       style: TextStyle(
@@ -337,7 +400,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16),
 
               _SocialButton(
-                onTap: () {},
+                onTap: () => _showSocialDemo('Google'),
                 icon: const Text('G',
                     style: TextStyle(
                         fontSize: 20,
@@ -347,7 +410,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 12),
               _SocialButton(
-                onTap: () {},
+                onTap: () => _showSocialDemo('Facebook'),
                 icon: const Icon(Icons.facebook,
                     color: Color(0xFF1877F2), size: 22),
                 label: 'Tiếp tục với Facebook',

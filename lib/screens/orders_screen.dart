@@ -81,7 +81,7 @@ class OrdersScreen extends StatelessWidget {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => OrderDetailScreen(order: order),
+                          builder: (_) => OrderDetailScreen(order: order, appState: appState),
                         ),
                       ),
                       child: Container(
@@ -252,7 +252,15 @@ class OrdersScreen extends StatelessWidget {
                                   const Spacer(),
                                   if (order.status == OrderStatus.delivered)
                                     OutlinedButton(
-                                      onPressed: () {},
+                                      onPressed: () {
+                                        appState.reorder(order);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Đã thêm sản phẩm vào giỏ hàng'),
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      },
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: AppTheme.primaryGreen,
                                         side: const BorderSide(
@@ -271,7 +279,42 @@ class OrdersScreen extends StatelessWidget {
                                     ),
                                   if (order.status == OrderStatus.confirmed)
                                     OutlinedButton(
-                                      onPressed: () {},
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => AlertDialog(
+                                            title: const Text('Huỷ đơn hàng?'),
+                                            content: const Text(
+                                                'Bạn có chắc muốn huỷ đơn hàng này không?'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
+                                                child: const Text('Không'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  appState.cancelOrder(order.id);
+                                                  Navigator.pop(context);
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(const SnackBar(
+                                                    content:
+                                                        Text('Đã huỷ đơn hàng'),
+                                                    behavior:
+                                                        SnackBarBehavior.floating,
+                                                  ));
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        AppTheme.discountRed),
+                                                child: const Text('Huỷ đơn',
+                                                    style: TextStyle(
+                                                        color: Colors.white)),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: AppTheme.discountRed,
                                         side: const BorderSide(

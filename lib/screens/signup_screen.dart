@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'login_screen.dart';
+// import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -23,6 +23,25 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _showSocialDemo(String provider) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Đăng ký với $provider'),
+        content: Text(
+          'Tính năng đăng ký với $provider đang được phát triển.\n\n'
+          'Vui lòng tạo tài khoản bằng email và mật khẩu.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _handleSignup() async {
@@ -74,7 +93,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           Icon(Icons.fork_right, color: Colors.white, size: 36),
                           Positioned(
                             top: 8,
-                            child: Icon(Icons.eco, color: Colors.white70, size: 18),
+                            child: Icon(Icons.eco,
+                                color: Colors.white70, size: 18),
                           ),
                         ],
                       ),
@@ -235,7 +255,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 16),
 
               _SocialButton(
-                onTap: () {},
+                onTap: () => _showSocialDemo('Google'),
                 icon: const Text('G',
                     style: TextStyle(
                         fontSize: 20,
@@ -245,7 +265,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 12),
               _SocialButton(
-                onTap: () {},
+                onTap: () => _showSocialDemo('Facebook'),
                 icon: const Icon(Icons.facebook,
                     color: Color(0xFF1877F2), size: 22),
                 label: 'Tiếp tục với Facebook',

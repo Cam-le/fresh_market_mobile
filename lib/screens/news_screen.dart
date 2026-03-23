@@ -70,7 +70,12 @@ class _NewsScreenState extends State<NewsScreen> {
       ),
       actions: [
         IconButton(
-          onPressed: () {},
+          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Tìm kiếm bài viết — sắp ra mắt'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          ),
           icon: const Icon(Icons.search, color: Colors.white),
         ),
       ],
