@@ -2,20 +2,45 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 class _Review {
-  final String name;
+  final String author;
   final double rating;
   final String comment;
   final String date;
-  final List<String> tags;
 
   const _Review({
-    required this.name,
+    required this.author,
     required this.rating,
     required this.comment,
     required this.date,
-    this.tags = const [],
   });
 }
+
+const _kReviews = [
+  _Review(
+    author: 'Nguyễn Thị Lan',
+    rating: 5,
+    comment: 'Sản phẩm chất lượng, tươi ngon, giao hàng nhanh.',
+    date: '8 tháng trước',
+  ),
+  _Review(
+    author: 'Trần Văn Minh',
+    rating: 5,
+    comment: 'Hàng mới, giao hàng nhanh. Sẽ mua lại.',
+    date: '8 tháng trước',
+  ),
+  _Review(
+    author: 'Phạm Thị Hoa',
+    rating: 4,
+    comment: 'Sản phẩm tươi, đóng gói cẩn thận. Rất hài lòng.',
+    date: '6 tháng trước',
+  ),
+  _Review(
+    author: 'Lê Quốc Tuấn',
+    rating: 5,
+    comment: 'Tươi sạch, đúng mô tả. Giao đúng giờ.',
+    date: '5 tháng trước',
+  ),
+];
 
 class ProductReviewsSection extends StatefulWidget {
   final String productId;
@@ -27,299 +52,324 @@ class ProductReviewsSection extends StatefulWidget {
 }
 
 class _ProductReviewsSectionState extends State<ProductReviewsSection> {
-  bool _showAll = false;
-  int _filterRating = 0; // 0 = all
+  int _filterStar = 0; // 0 = all
 
-  static const List<_Review> _reviews = [
-    _Review(
-        name: 'Nguyễn Thị B',
-        rating: 5,
-        comment: 'Rau tươi xanh, ngon, giao hàng nhanh. Tôi rất hài lòng!',
-        date: '12/03/2026',
-        tags: ['Tươi ngon', 'Giao nhanh']),
-    _Review(
-        name: 'Trần Văn C',
-        rating: 4,
-        comment: 'Sản phẩm chất lượng tốt, đóng gói cẩn thận. Sẽ mua lại.',
-        date: '10/03/2026',
-        tags: ['Đóng gói đẹp']),
-    _Review(
-        name: 'Lê Thị D',
-        rating: 5,
-        comment: 'Rau sạch thật sự, mua về nấu canh rất thơm ngon. Recommend!',
-        date: '08/03/2026',
-        tags: ['Sạch', 'Thơm ngon']),
-    _Review(
-        name: 'Phạm Văn E',
-        rating: 3,
-        comment: 'Hàng ổn nhưng giao hơi muộn hơn dự kiến. Vẫn tươi.',
-        date: '05/03/2026',
-        tags: []),
-    _Review(
-        name: 'Hoàng Thị F',
-        rating: 5,
-        comment: 'Mua thường xuyên, chất lượng ổn định, giá tốt hơn siêu thị.',
-        date: '01/03/2026',
-        tags: ['Giá tốt', 'Chất lượng ổn']),
-  ];
-
-  List<_Review> get _filtered => _filterRating == 0
-      ? _reviews
-      : _reviews.where((r) => r.rating == _filterRating).toList();
+  List<_Review> get _filtered => _filterStar == 0
+      ? _kReviews
+      : _kReviews.where((r) => r.rating.floor() == _filterStar).toList();
 
   double get _avgRating =>
-      _reviews.fold(0.0, (s, r) => s + r.rating) / _reviews.length;
+      _kReviews.fold(0.0, (s, r) => s + r.rating) / _kReviews.length;
 
-  Map<int, int> get _ratingDist {
-    final map = <int, int>{5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
-    for (final r in _reviews) {
-      map[r.rating.toInt()] = (map[r.rating.toInt()] ?? 0) + 1;
+  Map<int, int> get _distribution {
+    final map = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+    for (final r in _kReviews) {
+      map[r.rating.floor()] = (map[r.rating.floor()] ?? 0) + 1;
     }
     return map;
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
-    final display = _showAll ? filtered : filtered.take(3).toList();
+    final dist = _distribution;
+    final total = _kReviews.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header + summary
+        const Text(
+          'ĐÁNH GIÁ SẢN PHẨM',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textDark,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Summary row ──────────────────────────────────────────────
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text('Đánh giá',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            const Spacer(),
-            TextButton(
-              onPressed: () {},
-              child: const Text('Viết đánh giá',
-                  style: TextStyle(color: AppTheme.primaryGreen, fontSize: 13)),
+            // Big avg score
+            Column(
+              children: [
+                Text(
+                  _avgRating.toStringAsFixed(1),
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+                const Text(
+                  '/ 5',
+                  style: TextStyle(fontSize: 13, color: AppTheme.textGray),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: List.generate(
+                    5,
+                    (i) => Icon(
+                      i < _avgRating.floor()
+                          ? Icons.star
+                          : (i < _avgRating
+                              ? Icons.star_half
+                              : Icons.star_border),
+                      size: 16,
+                      color: const Color(0xFFFFC107),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Dựa trên $total đánh giá',
+                  style:
+                      const TextStyle(fontSize: 10, color: AppTheme.textLight),
+                ),
+              ],
+            ),
+            const SizedBox(width: 20),
+
+            // Distribution bars
+            Expanded(
+              child: Column(
+                children: [5, 4, 3, 2, 1].map((star) {
+                  final count = dist[star] ?? 0;
+                  final pct = total == 0 ? 0.0 : count / total;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(
+                            star,
+                            (_) => const Icon(Icons.star,
+                                size: 10, color: Color(0xFFFFC107)),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: pct,
+                              minHeight: 8,
+                              backgroundColor: const Color(0xFFEEEEEE),
+                              color: pct > 0
+                                  ? const Color(0xFFFFC107)
+                                  : const Color(0xFFEEEEEE),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        SizedBox(
+                          width: 44,
+                          child: Text(
+                            '${(pct * 100).toInt()}%($count)',
+                            style: const TextStyle(
+                                fontSize: 9, color: AppTheme.textLight),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        // Rating summary
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF9FBF7),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        const SizedBox(height: 16),
+
+        // ── Filter chips ─────────────────────────────────────────────
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              // Big score
-              Column(
-                children: [
-                  Text(
-                    _avgRating.toStringAsFixed(1),
-                    style: const TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.primaryGreen,
-                        height: 1),
-                  ),
-                  Row(
-                    children: List.generate(
-                        5,
-                        (i) => Icon(
-                              i < _avgRating.floor()
-                                  ? Icons.star
-                                  : (i < _avgRating
-                                      ? Icons.star_half
-                                      : Icons.star_border),
-                              size: 14,
-                              color: const Color(0xFFFFC107),
-                            )),
-                  ),
-                  const SizedBox(height: 2),
-                  Text('${_reviews.length} đánh giá',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppTheme.textLight)),
-                ],
+              _StarFilterChip(
+                label: 'Tất cả',
+                selected: _filterStar == 0,
+                onTap: () => setState(() => _filterStar = 0),
               ),
-              const SizedBox(width: 20),
-              // Bars
-              Expanded(
-                child: Column(
-                  children: [5, 4, 3, 2, 1].map((star) {
-                    final count = _ratingDist[star] ?? 0;
-                    final fraction =
-                        _reviews.isEmpty ? 0.0 : count / _reviews.length;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        children: [
-                          Text('$star',
-                              style: const TextStyle(
-                                  fontSize: 11, color: AppTheme.textGray)),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.star,
-                              size: 10, color: Color(0xFFFFC107)),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(3),
-                              child: LinearProgressIndicator(
-                                value: fraction,
-                                minHeight: 6,
-                                backgroundColor: const Color(0xFFE0E0E0),
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                    Color(0xFFFFC107)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          SizedBox(
-                              width: 20,
-                              child: Text('$count',
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppTheme.textLight))),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+              ...List.generate(
+                5,
+                (i) => _StarFilterChip(
+                  label: '${5 - i} sao',
+                  selected: _filterStar == 5 - i,
+                  onTap: () => setState(() => _filterStar = 5 - i),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        // Filter chips
-        SizedBox(
-          height: 36,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [0, 5, 4, 3, 2, 1].map((r) {
-              final isSelected = _filterRating == r;
-              return GestureDetector(
-                onTap: () => setState(() => _filterRating = r),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.primaryGreen : Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                        color: isSelected
-                            ? AppTheme.primaryGreen
-                            : const Color(0xFFE0E0E0)),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    r == 0 ? 'Tất cả' : '$r ⭐',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected ? Colors.white : AppTheme.textGray,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Review list
-        ...display.map((r) => _ReviewCard(review: r)),
-        if (filtered.length > 3)
-          TextButton(
-            onPressed: () => setState(() => _showAll = !_showAll),
-            child: Text(
-              _showAll ? 'Thu gọn' : 'Xem tất cả ${filtered.length} đánh giá',
-              style: const TextStyle(color: AppTheme.primaryGreen),
+
+        // ── Review list ──────────────────────────────────────────────
+        ..._filtered.map((r) => _ReviewCard(review: r)),
+
+        if (_filtered.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'Không có đánh giá nào.',
+                style: TextStyle(color: AppTheme.textGray),
+              ),
             ),
           ),
+
+        // ── Shop reply stub ──────────────────────────────────────────
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F5E9),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'FRESH FOOD MARKET',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primaryGreen),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Cảm ơn quý khách đã tin tưởng và ủng hộ FRESH FOOD MARKET ạ.',
+                style: TextStyle(fontSize: 13, color: AppTheme.textGray),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
       ],
+    );
+  }
+}
+
+class _StarFilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _StarFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.primaryGreen : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? AppTheme.primaryGreen : const Color(0xFFDDDDDD),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppTheme.textGray,
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _ReviewCard extends StatelessWidget {
   final _Review review;
+
   const _ReviewCard({required this.review});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFF0F0F0)),
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.15),
-                child: Text(
-                  review.name[0],
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.primaryGreen),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFFE8F5E9),
+            child: Text(
+              review.author.isNotEmpty ? review.author[0] : '?',
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primaryGreen),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(review.name,
+                    Expanded(
+                      child: Text(
+                        review.author,
                         style: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600)),
-                    Row(
-                      children: [
-                        ...List.generate(
-                            5,
-                            (i) => Icon(
-                                  i < review.rating
-                                      ? Icons.star
-                                      : Icons.star_border,
-                                  size: 12,
-                                  color: const Color(0xFFFFC107),
-                                )),
-                        const SizedBox(width: 6),
-                        Text(review.date,
-                            style: const TextStyle(
-                                fontSize: 11, color: AppTheme.textLight)),
-                      ],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textDark),
+                      ),
+                    ),
+                    Text(
+                      review.date,
+                      style: const TextStyle(
+                          fontSize: 11, color: AppTheme.textLight),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(review.comment,
-              style: const TextStyle(
-                  fontSize: 13, color: AppTheme.textGray, height: 1.5)),
-          if (review.tags.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              children: review.tags
-                  .map((t) => Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(t,
-                            style: const TextStyle(
-                                fontSize: 11, color: AppTheme.primaryGreen)),
-                      ))
-                  .toList(),
+                const SizedBox(height: 3),
+                Row(
+                  children: List.generate(
+                    5,
+                    (i) => Icon(
+                      i < review.rating.floor()
+                          ? Icons.star
+                          : Icons.star_border,
+                      size: 13,
+                      color: const Color(0xFFFFC107),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  review.comment,
+                  style: const TextStyle(
+                      fontSize: 13, color: AppTheme.textGray, height: 1.5),
+                ),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () {},
+                  child: const Text(
+                    '↩ Reply',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.primaryGreen,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );

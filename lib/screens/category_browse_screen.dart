@@ -45,6 +45,18 @@ class _CategoryBrowseScreenState extends State<CategoryBrowseScreen> {
     return list;
   }
 
+  void _navigateToDetail(BuildContext context, Product product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailScreen(
+          product: product,
+          appState: widget.appState,
+        ),
+      ),
+    );
+  }
+
   void _showFilterSheet() {
     showModalBottomSheet(
       context: context,
@@ -180,7 +192,6 @@ class _CategoryBrowseScreenState extends State<CategoryBrowseScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                // Sort chips
                 Expanded(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -213,7 +224,7 @@ class _CategoryBrowseScreenState extends State<CategoryBrowseScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Grid toggle
+                // View toggle
                 Row(
                   children: [
                     GestureDetector(
@@ -224,7 +235,7 @@ class _CategoryBrowseScreenState extends State<CategoryBrowseScreen> {
                               ? AppTheme.primaryGreen
                               : AppTheme.textLight),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => setState(() => _gridCols = 1),
                       child: Icon(Icons.view_list_rounded,
@@ -238,7 +249,7 @@ class _CategoryBrowseScreenState extends State<CategoryBrowseScreen> {
               ],
             ),
           ),
-          // Count
+          // Count + clear filters
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             child: Row(
@@ -264,7 +275,7 @@ class _CategoryBrowseScreenState extends State<CategoryBrowseScreen> {
               ],
             ),
           ),
-          // Grid
+          // Grid / List
           Expanded(
             child: products.isEmpty
                 ? Center(
@@ -290,19 +301,15 @@ class _CategoryBrowseScreenState extends State<CategoryBrowseScreen> {
                           mainAxisSpacing: 10,
                         ),
                         itemCount: products.length,
-                        itemBuilder: (ctx, i) => GestureDetector(
-                          onTap: () => Navigator.push(
-                              ctx,
-                              MaterialPageRoute(
-                                  builder: (_) => ProductDetailScreen(
-                                      product: products[i],
-                                      appState: widget.appState))),
-                          child: ProductCard(
-                            product: products[i],
+                        itemBuilder: (ctx, i) {
+                          final product = products[i];
+                          return ProductCard(
+                            product: product,
+                            onTap: () => _navigateToDetail(ctx, product),
                             onAddToCart: () =>
-                                widget.appState.addToCart(products[i]),
-                          ),
-                        ),
+                                widget.appState.addToCart(product),
+                          );
+                        },
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.all(12),
@@ -357,7 +364,11 @@ class _ListProductTile extends StatelessWidget {
                   height: 110,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                      width: 110, height: 110, color: const Color(0xFFE8F5E9))),
+                      width: 110,
+                      height: 110,
+                      color: const Color(0xFFE8F5E9),
+                      child: const Icon(Icons.image_not_supported_outlined,
+                          color: AppTheme.primaryGreen))),
             ),
             const SizedBox(width: 12),
             Expanded(

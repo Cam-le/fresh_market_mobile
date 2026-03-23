@@ -15,13 +15,9 @@ class CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Derive childAspectRatio from actual screen width so it works on any device.
-    // card width  = (screenWidth - gridPadding×2 - gap×3) / 4
-    // card height = cardWidth (image, 1:1) + contentHeight (fixed text block)
     const double gridPadding = 12;
     const double gap = 8;
     const int columns = 4;
-    // 88dp accounts for: name (2 lines) + unit + rating + price row + paddings
     const double contentHeight = 88;
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -83,7 +79,8 @@ class CategorySection extends StatelessWidget {
           itemCount: category.products.length,
           itemBuilder: (context, index) {
             final product = category.products[index];
-            return GestureDetector(
+            return ProductCard(
+              product: product,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -91,22 +88,19 @@ class CategorySection extends StatelessWidget {
                       ProductDetailScreen(product: product, appState: appState),
                 ),
               ),
-              child: ProductCard(
-                product: product,
-                onAddToCart: () {
-                  appState.addToCart(product);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Đã thêm ${product.name} vào giỏ'),
-                      duration: const Duration(seconds: 1),
-                      backgroundColor: AppTheme.primaryGreen,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                  );
-                },
-              ),
+              onAddToCart: () {
+                appState.addToCart(product);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Đã thêm ${product.name} vào giỏ'),
+                    duration: const Duration(seconds: 1),
+                    backgroundColor: AppTheme.primaryGreen,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                );
+              },
             );
           },
         ),

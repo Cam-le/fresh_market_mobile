@@ -44,6 +44,18 @@ class _SearchScreenState extends State<SearchScreen> {
     }).toList();
   }
 
+  void _navigateToDetail(BuildContext context, Product product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailScreen(
+          product: product,
+          appState: widget.appState,
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -161,23 +173,11 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     itemCount: results.length,
                     itemBuilder: (context, i) {
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProductDetailScreen(
-                                product: results[i],
-                                appState: widget.appState,
-                              ),
-                            ),
-                          );
-                        },
-                        child: ProductCard(
-                          product: results[i],
-                          onAddToCart: () =>
-                              widget.appState.addToCart(results[i]),
-                        ),
+                      final product = results[i];
+                      return ProductCard(
+                        product: product,
+                        onTap: () => _navigateToDetail(context, product),
+                        onAddToCart: () => widget.appState.addToCart(product),
                       );
                     },
                   ),

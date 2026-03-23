@@ -11,7 +11,7 @@ class AppData {
       rating: 4.5,
       reviewCount: 120,
       imageUrl:
-          'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=300',
+          'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=300',
       unit: '500g',
       isSale: true,
       category: 'rau_cu',
@@ -23,7 +23,7 @@ class AppData {
       rating: 4.3,
       reviewCount: 85,
       imageUrl:
-          'https://images.unsplash.com/photo-1598030343246-0a2c1e2f99c7?w=300',
+          'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300',
       unit: '500g',
       category: 'rau_cu',
     ),
@@ -34,7 +34,7 @@ class AppData {
       rating: 4.7,
       reviewCount: 200,
       imageUrl:
-          'https://images.unsplash.com/photo-1587411768638-ec71f8e33b78?w=300',
+          'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=300',
       unit: '500g',
       isNew: true,
       category: 'rau_cu',
@@ -46,7 +46,7 @@ class AppData {
       rating: 4.4,
       reviewCount: 65,
       imageUrl:
-          'https://images.unsplash.com/photo-1570586437263-ab629fccc818?w=300',
+          'https://images.unsplash.com/photo-1506917728037-b6af01a7d403?w=300',
       unit: '1kg',
       category: 'rau_cu',
     ),
@@ -57,7 +57,7 @@ class AppData {
       rating: 4.2,
       reviewCount: 150,
       imageUrl:
-          'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300',
+          'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=300',
       unit: 'Bó',
       category: 'rau_cu',
     ),
@@ -69,7 +69,7 @@ class AppData {
       rating: 4.8,
       reviewCount: 310,
       imageUrl:
-          'https://images.unsplash.com/photo-1546094096-0df4bcabd337?w=300',
+          'https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=300',
       unit: '500g',
       isSale: true,
       category: 'rau_cu',
@@ -130,7 +130,7 @@ class AppData {
       rating: 4.7,
       reviewCount: 180,
       imageUrl:
-          'https://images.unsplash.com/photo-1562547256-2c5ee93714f6?w=300',
+          'https://images.unsplash.com/photo-1490885578174-acda8905c2c6?w=300',
       unit: 'Trái',
       isNew: true,
       category: 'trai_cay',
@@ -192,7 +192,7 @@ class AppData {
       rating: 4.9,
       reviewCount: 420,
       imageUrl:
-          'https://images.unsplash.com/photo-1609501676725-7186f017a4b7?w=300',
+          'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=300',
       unit: '1kg',
       isSale: true,
       category: 'hai_san',
@@ -231,7 +231,7 @@ class AppData {
       rating: 4.6,
       reviewCount: 145,
       imageUrl:
-          'https://images.unsplash.com/photo-1546964124-0cce460b0c03?w=300',
+          'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=300',
       unit: '500g',
       category: 'thit',
     ),
@@ -389,7 +389,7 @@ class AppData {
       date: '10/08/2025',
       category: 'Sức khỏe',
       imageUrl:
-          'https://images.unsplash.com/photo-1546964124-0cce460b0c03?w=800',
+          'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=800',
       summary:
           'Biết cách chọn thịt bò tươi sẽ giúp bữa ăn ngon hơn và đảm bảo an toàn thực phẩm cho cả gia đình.',
       views: 1890,

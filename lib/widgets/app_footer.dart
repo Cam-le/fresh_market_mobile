@@ -7,7 +7,7 @@ class AppFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF1C1C1C),
+      color: AppTheme.primaryGreen,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -25,8 +25,10 @@ class AppFooter extends StatelessWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryGreen,
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.4)),
                       ),
                       child: const Stack(
                         alignment: Alignment.center,
@@ -50,7 +52,7 @@ class AppFooter extends StatelessWidget {
                         Text(
                           'Thực phẩm sạch, tươi ngon mỗi ngày',
                           style: TextStyle(
-                            color: Color(0xFF9E9E9E),
+                            color: Colors.white70,
                             fontSize: 11,
                           ),
                         ),
@@ -63,7 +65,7 @@ class AppFooter extends StatelessWidget {
                 const Text(
                   'Cung cấp thực phẩm tươi sống, sạch và an toàn cho sức khỏe gia đình bạn.',
                   style: TextStyle(
-                    color: Color(0xFF9E9E9E),
+                    color: Colors.white70,
                     fontSize: 12,
                     height: 1.6,
                   ),
@@ -72,30 +74,18 @@ class AppFooter extends StatelessWidget {
                 // Social icons
                 Row(
                   children: [
-                    _SocialBtn(
-                      label: 'f',
-                      color: const Color(0xFF1877F2),
-                      onTap: () {},
-                    ),
+                    _SocialBtn(label: 'f', onTap: () {}),
                     const SizedBox(width: 10),
-                    _SocialBtn(
-                      icon: Icons.camera_alt_outlined,
-                      color: const Color(0xFFE1306C),
-                      onTap: () {},
-                    ),
+                    _SocialBtn(icon: Icons.camera_alt_outlined, onTap: () {}),
                     const SizedBox(width: 10),
-                    _SocialBtn(
-                      icon: Icons.play_circle_fill,
-                      color: const Color(0xFFFF0000),
-                      onTap: () {},
-                    ),
+                    _SocialBtn(icon: Icons.play_circle_fill, onTap: () {}),
                   ],
                 ),
               ],
             ),
           ),
 
-          const Divider(color: Color(0xFF2E2E2E), height: 1),
+          Divider(color: Colors.white.withValues(alpha: 0.25), height: 1),
 
           // ── Link columns ─────────────────────────────────────────────
           const Padding(
@@ -152,7 +142,7 @@ class AppFooter extends StatelessWidget {
             ),
           ),
 
-          const Divider(color: Color(0xFF2E2E2E), height: 1),
+          Divider(color: Colors.white.withValues(alpha: 0.25), height: 1),
 
           // ── Copyright ─────────────────────────────────────────────────
           const Padding(
@@ -160,7 +150,7 @@ class AppFooter extends StatelessWidget {
             child: Center(
               child: Text(
                 '© 2026 Ăn Sạch Sống Khỏe. All rights reserved.',
-                style: TextStyle(color: Color(0xFF616161), fontSize: 11),
+                style: TextStyle(color: Colors.white60, fontSize: 11),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -174,15 +164,9 @@ class AppFooter extends StatelessWidget {
 class _SocialBtn extends StatelessWidget {
   final String? label;
   final IconData? icon;
-  final Color color;
   final VoidCallback onTap;
 
-  const _SocialBtn({
-    this.label,
-    this.icon,
-    required this.color,
-    required this.onTap,
-  });
+  const _SocialBtn({this.label, this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -192,16 +176,18 @@ class _SocialBtn extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
+          color: Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
         ),
         alignment: Alignment.center,
         child: label != null
             ? Text(label!,
-                style: TextStyle(
-                    color: color, fontSize: 16, fontWeight: FontWeight.w900))
-            : Icon(icon!, color: color, size: 18),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900))
+            : Icon(icon!, color: Colors.white, size: 18),
       ),
     );
   }
@@ -233,7 +219,7 @@ class _FooterCol extends StatelessWidget {
             child: Text(
               item,
               style: const TextStyle(
-                color: Color(0xFF9E9E9E),
+                color: Colors.white70,
                 fontSize: 11,
                 height: 1.3,
               ),
@@ -256,13 +242,13 @@ class _ContactRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 13, color: AppTheme.primaryGreen),
+        Icon(icon, size: 13, color: Colors.white),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             style: const TextStyle(
-              color: Color(0xFF9E9E9E),
+              color: Colors.white70,
               fontSize: 11,
               height: 1.4,
             ),
