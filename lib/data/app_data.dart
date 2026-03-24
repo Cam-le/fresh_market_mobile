@@ -1,6 +1,40 @@
 import '../models/product.dart';
 import '../models/news.dart';
 
+class PromoVoucher {
+  final String code;
+  final String title;
+  final String description;
+  final String expiry;
+  final int discount;
+  final bool isPercent;
+  final int minOrder;
+
+  /// Max discount cap in VND (only used when isPercent == true; 0 = no cap)
+  final int maxDiscount;
+
+  const PromoVoucher({
+    required this.code,
+    required this.title,
+    required this.description,
+    required this.expiry,
+    required this.discount,
+    required this.isPercent,
+    required this.minOrder,
+    this.maxDiscount = 0,
+  });
+
+  /// Computes the actual discount amount given a subtotal (in VND).
+  int computeDiscount(double subtotal) {
+    if (subtotal < minOrder) return 0;
+    if (isPercent) {
+      final raw = (subtotal * discount / 100).round();
+      return (maxDiscount > 0 && raw > maxDiscount) ? maxDiscount : raw;
+    }
+    return discount;
+  }
+}
+
 class AppData {
   static const List<Product> vegetables = [
     Product(
@@ -273,6 +307,47 @@ class AppData {
           products: meat,
         ),
       ];
+
+  static const List<PromoVoucher> vouchers = [
+    PromoVoucher(
+      code: 'WELCOME50',
+      title: 'Chào mừng thành viên mới',
+      description: 'Giảm 50.000đ cho đơn hàng từ 200.000đ',
+      expiry: '31/03/2026',
+      discount: 50000,
+      isPercent: false,
+      minOrder: 200000,
+    ),
+    PromoVoucher(
+      code: 'FREESHIP',
+      title: 'Miễn phí vận chuyển',
+      description: 'Giảm 25.000đ (tương đương phí ship) không giới hạn đơn',
+      expiry: '15/04/2026',
+      discount: 25000,
+      isPercent: false,
+      minOrder: 0,
+    ),
+    PromoVoucher(
+      code: 'SUMMER20',
+      title: 'Khuyến mãi hè 2026',
+      description: 'Giảm 20% tối đa 100.000đ cho đơn từ 300.000đ',
+      expiry: '30/06/2026',
+      discount: 20,
+      isPercent: true,
+      minOrder: 300000,
+      maxDiscount: 100000,
+    ),
+    PromoVoucher(
+      code: 'VIP30',
+      title: 'Ưu đãi thành viên VIP',
+      description: 'Giảm 30% tối đa 150.000đ cho đơn từ 500.000đ',
+      expiry: '31/12/2026',
+      discount: 30,
+      isPercent: true,
+      minOrder: 500000,
+      maxDiscount: 150000,
+    ),
+  ];
 
   static const List<Map<String, String>> banners = [
     {

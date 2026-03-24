@@ -36,7 +36,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     },
   ];
 
-  String _formatPrice(double price) {
+  String _formatPrice(num price) {
     final formatted = price.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d)(?=(\d{3})+$)'),
           (m) => '${m[1]}.',
@@ -233,6 +233,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         : _formatPrice(cart.shippingFee),
                     valueColor:
                         cart.shippingFee == 0 ? AppTheme.primaryGreen : null),
+                if (cart.discount > 0) ...[
+                  const SizedBox(height: 8),
+                  _Row(
+                    cart.appliedVoucherCode != null
+                        ? 'Mã "${cart.appliedVoucherCode}"'
+                        : 'Giảm giá',
+                    '-${_formatPrice(cart.discount)}',
+                    valueColor: AppTheme.discountRed,
+                  ),
+                ],
                 const Padding(
                     padding: EdgeInsets.symmetric(vertical: 10),
                     child: Divider()),

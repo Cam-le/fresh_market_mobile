@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../data/app_data.dart';
 import '../theme/app_theme.dart';
 
-class _Voucher {
-  final String code;
-  final String title;
-  final String description;
-  final String expiry;
-  final int discount;
-  final bool isPercent;
-  final int minOrder;
+// Internal display wrapper — merges AppData.vouchers with used-state tracking.
+class _VoucherItem {
+  final PromoVoucher voucher;
   bool isUsed;
 
-  _Voucher({
-    required this.code,
-    required this.title,
-    required this.description,
-    required this.expiry,
-    required this.discount,
-    required this.isPercent,
-    required this.minOrder,
-    this.isUsed = false,
-  });
+  _VoucherItem({required this.voucher, this.isUsed = false});
 }
 
 class PromoCodeScreen extends StatefulWidget {
-  const PromoCodeScreen({super.key});
+  /// When provided, the screen runs in "picker" mode:
+  /// - Each eligible voucher shows an "Áp dụng" button instead of copy.
+  /// - Tapping it calls [onApply] and pops.
+  /// - Ineligible vouchers (minOrder not met) are shown dimmed.
+  final double? cartSubtotal;
+  final void Function(PromoVoucher voucher)? onApply;
+
+  const PromoCodeScreen({
+    super.key,
+    this.cartSubtotal,
+    this.onApply,
+  });
+
+  bool get _isPickerMode => onApply != null;
 
   @override
   State<PromoCodeScreen> createState() => _PromoCodeScreenState();
@@ -36,51 +36,19 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
   late TabController _tabController;
   final _codeCtrl = TextEditingController();
 
-  final List<_Voucher> _vouchers = [
-    _Voucher(
-      code: 'WELCOME50',
-      title: 'Chào mừng thành viên mới',
-      description: 'Giảm 50.000đ cho đơn hàng đầu tiên từ 200.000đ',
-      expiry: '31/03/2026',
-      discount: 50000,
-      isPercent: false,
-      minOrder: 200000,
-    ),
-    _Voucher(
-      code: 'FREESHIP',
-      title: 'Miễn phí vận chuyển',
-      description: 'Miễn phí giao hàng cho mọi đơn hàng không giới hạn',
-      expiry: '15/04/2026',
-      discount: 25000,
-      isPercent: false,
-      minOrder: 0,
-    ),
-    _Voucher(
-      code: 'SUMMER20',
-      title: 'Khuyến mãi hè 2026',
-      description: 'Giảm 20% tối đa 100.000đ cho đơn từ 300.000đ',
-      expiry: '30/06/2026',
-      discount: 20,
-      isPercent: true,
-      minOrder: 300000,
-    ),
-    _Voucher(
-      code: 'VIP30',
-      title: 'Ưu đãi thành viên VIP',
-      description: 'Giảm 30% cho thành viên hạng VIP, đơn từ 500.000đ',
-      expiry: '31/12/2026',
-      discount: 30,
-      isPercent: true,
-      minOrder: 500000,
-    ),
-    _Voucher(
-      code: 'OLDCODE',
-      title: 'Mã đã hết hạn',
-      description: 'Mã này đã hết hạn sử dụng',
-      expiry: '01/01/2026',
-      discount: 10,
-      isPercent: true,
-      minOrder: 100000,
+  // Build from AppData; one expired code kept as "used" example.
+  final List<_VoucherItem> _items = [
+    ...AppData.vouchers.map((v) => _VoucherItem(voucher: v)),
+    _VoucherItem(
+      voucher: const PromoVoucher(
+        code: 'OLDCODE',
+        title: 'Mã đã hết hạn',
+        description: 'Mã này đã hết hạn sử dụng',
+        expiry: '01/01/2026',
+        discount: 10,
+        isPercent: true,
+        minOrder: 100000,
+      ),
       isUsed: true,
     ),
   ];
@@ -101,8 +69,8 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
   String _formatPrice(int p) =>
       '${p.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]}.')}₫';
 
-  List<_Voucher> get _available => _vouchers.where((v) => !v.isUsed).toList();
-  List<_Voucher> get _used => _vouchers.where((v) => v.isUsed).toList();
+  List<_VoucherItem> get _available => _items.where((v) => !v.isUsed).toList();
+  List<_VoucherItem> get _used => _items.where((v) => v.isUsed).toList();
 
   void _copyCode(String code) {
     Clipboard.setData(ClipboardData(text: code));
@@ -115,11 +83,21 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
     ));
   }
 
+  void _applyVoucher(PromoVoucher v) {
+    widget.onApply!(v);
+    Navigator.pop(context);
+  }
+
   void _applyManualCode() {
     final code = _codeCtrl.text.trim().toUpperCase();
     final found =
-        _vouchers.where((v) => v.code == code && !v.isUsed).firstOrNull;
+        _items.where((v) => v.voucher.code == code && !v.isUsed).firstOrNull;
     if (found != null) {
+      if (widget._isPickerMode) {
+        _applyVoucher(found.voucher);
+        _codeCtrl.clear();
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('✅ Áp dụng mã $code thành công!'),
         backgroundColor: AppTheme.primaryGreen,
@@ -137,143 +115,149 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
     }
   }
 
-  Widget _buildVoucherCard(_Voucher v) {
-    final isGray = v.isUsed;
-    final color = isGray ? Colors.grey : AppTheme.primaryGreen;
+  Widget _buildVoucherCard(_VoucherItem item) {
+    final v = item.voucher;
+    final isGray = item.isUsed;
+    final subtotal = widget.cartSubtotal ?? 0;
+    final meetsMin = subtotal >= v.minOrder;
+    // In picker mode, vouchers that don't meet minOrder appear dimmed but visible.
+    final isDisabled = widget._isPickerMode && !isGray && !meetsMin;
+    final color = (isGray || isDisabled) ? Colors.grey : AppTheme.primaryGreen;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Left accent strip + icon
-              Container(
-                width: 72,
-                color: color.withValues(alpha: 0.12),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      v.isPercent ? Icons.percent : Icons.local_offer_outlined,
-                      color: color,
-                      size: 28,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      v.isPercent
-                          ? '-${v.discount}%'
-                          : '-${_formatPrice(v.discount)}',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: color),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              // Dashed separator
-              CustomPaint(
-                size: const Size(12, double.infinity),
-                painter: _DashedLinePainter(color: Colors.grey[300]!),
-              ),
-              // Content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
+    return Opacity(
+      opacity: isDisabled ? 0.5 : 1.0,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                // Left accent strip + icon
+                Container(
+                  width: 72,
+                  color: color.withValues(alpha: 0.12),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(v.title,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: isGray
-                                      ? AppTheme.textLight
-                                      : AppTheme.textDark,
-                                )),
-                          ),
-                          if (isGray)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text('Đã dùng',
-                                  style: TextStyle(
-                                      fontSize: 10, color: Colors.grey)),
-                            ),
-                        ],
+                      Icon(
+                        v.isPercent
+                            ? Icons.percent
+                            : Icons.local_offer_outlined,
+                        color: color,
+                        size: 28,
                       ),
-                      const SizedBox(height: 4),
-                      Text(v.description,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textGray,
-                              height: 1.4)),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.access_time,
-                              size: 12, color: Colors.grey[400]),
-                          const SizedBox(width: 4),
-                          Text('HSD: ${v.expiry}',
-                              style: const TextStyle(
-                                  fontSize: 11, color: AppTheme.textLight)),
-                          const Spacer(),
-                          if (!isGray)
-                            GestureDetector(
-                              onTap: () => _copyCode(v.code),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                      color: color.withValues(alpha: 0.3)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(v.code,
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: color)),
-                                    const SizedBox(width: 4),
-                                    Icon(Icons.copy, size: 12, color: color),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
+                      const SizedBox(height: 6),
+                      Text(
+                        v.isPercent
+                            ? '-${v.discount}%'
+                            : '-${_formatPrice(v.discount)}',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: color),
+                        textAlign: TextAlign.center,
                       ),
-                      if (v.minOrder > 0) ...[
-                        const SizedBox(height: 4),
-                        Text('Đơn tối thiểu: ${_formatPrice(v.minOrder)}',
-                            style: const TextStyle(
-                                fontSize: 11, color: AppTheme.textLight)),
-                      ],
                     ],
                   ),
                 ),
-              ),
-            ],
+                // Dashed separator
+                CustomPaint(
+                  size: const Size(12, double.infinity),
+                  painter: _DashedLinePainter(color: Colors.grey[300]!),
+                ),
+                // Content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(v.title,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: isGray
+                                        ? AppTheme.textLight
+                                        : AppTheme.textDark,
+                                  )),
+                            ),
+                            if (isGray)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text('Đã dùng',
+                                    style: TextStyle(
+                                        fontSize: 10, color: Colors.grey)),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(v.description,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textGray,
+                                height: 1.4)),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.access_time,
+                                size: 12, color: Colors.grey[400]),
+                            const SizedBox(width: 4),
+                            Text('HSD: ${v.expiry}',
+                                style: const TextStyle(
+                                    fontSize: 11, color: AppTheme.textLight)),
+                            const Spacer(),
+                            if (!isGray) ...[
+                              if (widget._isPickerMode)
+                                _ApplyButton(
+                                  color: color,
+                                  enabled: meetsMin,
+                                  onTap:
+                                      meetsMin ? () => _applyVoucher(v) : null,
+                                )
+                              else
+                                GestureDetector(
+                                  onTap: () => _copyCode(v.code),
+                                  child: _CodeChip(code: v.code, color: color),
+                                ),
+                            ],
+                          ],
+                        ),
+                        if (v.minOrder > 0) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            isDisabled
+                                ? 'Cần thêm ${_formatPrice((v.minOrder - subtotal).round())} để dùng mã này'
+                                : 'Đơn tối thiểu: ${_formatPrice(v.minOrder)}',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: isDisabled
+                                    ? AppTheme.accentOrange
+                                    : AppTheme.textLight),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -284,7 +268,8 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mã khuyến mãi'),
+        title:
+            Text(widget._isPickerMode ? 'Chọn mã giảm giá' : 'Mã khuyến mãi'),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -358,9 +343,68 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
   }
 }
 
+// ── Small reusable sub-widgets ────────────────────────────────────────────
+
+class _CodeChip extends StatelessWidget {
+  final String code;
+  final Color color;
+  const _CodeChip({required this.code, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(code,
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+          const SizedBox(width: 4),
+          Icon(Icons.copy, size: 12, color: color),
+        ],
+      ),
+    );
+  }
+}
+
+class _ApplyButton extends StatelessWidget {
+  final Color color;
+  final bool enabled;
+  final VoidCallback? onTap;
+  const _ApplyButton({required this.color, required this.enabled, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: enabled ? color : Colors.grey[300],
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          'Áp dụng',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: enabled ? Colors.white : Colors.grey,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _DashedLinePainter extends CustomPainter {
   final Color color;
-  _DashedLinePainter({required this.color});
+  const _DashedLinePainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {

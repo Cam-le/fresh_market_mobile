@@ -3,6 +3,7 @@ import '../models/app_state.dart';
 import '../models/cart.dart';
 import '../theme/app_theme.dart';
 import 'checkout_screen.dart';
+import 'promo_code_screen.dart';
 
 class CartScreen extends StatefulWidget {
   final AppState appState;
@@ -14,12 +15,27 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  String _formatPrice(double price) {
+  String _formatPrice(num price) {
     final formatted = price.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d)(?=(\d{3})+$)'),
           (m) => '${m[1]}.',
         );
     return '$formatted₫';
+  }
+
+  void _openVoucherPicker(CartModel cart) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PromoCodeScreen(
+          cartSubtotal: cart.subtotal,
+          onApply: (voucher) {
+            final amount = voucher.computeDiscount(cart.subtotal).toDouble();
+            cart.applyDiscount(code: voucher.code, amount: amount);
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -209,6 +225,72 @@ class _CartScreenState extends State<CartScreen> {
                 valueColor:
                     cart.shippingFee == 0 ? AppTheme.primaryGreen : null,
               ),
+              const SizedBox(height: 10),
+              // Voucher row
+              GestureDetector(
+                onTap: () => _openVoucherPicker(cart),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: cart.appliedVoucherCode != null
+                          ? AppTheme.primaryGreen
+                          : const Color(0xFFE0E0E0),
+                      width: cart.appliedVoucherCode != null ? 1.5 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    color: cart.appliedVoucherCode != null
+                        ? const Color(0xFFE8F5E9)
+                        : Colors.white,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.confirmation_number_outlined,
+                        size: 18,
+                        color: cart.appliedVoucherCode != null
+                            ? AppTheme.primaryGreen
+                            : AppTheme.textLight,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: cart.appliedVoucherCode != null
+                            ? Text(
+                                cart.appliedVoucherCode!,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.primaryGreen,
+                                ),
+                              )
+                            : const Text(
+                                'Chọn hoặc nhập mã giảm giá',
+                                style: TextStyle(
+                                    fontSize: 13, color: AppTheme.textLight),
+                              ),
+                      ),
+                      if (cart.appliedVoucherCode != null)
+                        GestureDetector(
+                          onTap: cart.clearDiscount,
+                          child: const Icon(Icons.close,
+                              size: 16, color: AppTheme.textGray),
+                        )
+                      else
+                        const Icon(Icons.chevron_right,
+                            size: 18, color: AppTheme.textLight),
+                    ],
+                  ),
+                ),
+              ),
+              if (cart.discount > 0) ...[
+                const SizedBox(height: 8),
+                _SummaryRow(
+                  'Giảm giá',
+                  '-${_formatPrice(cart.discount)}',
+                  valueColor: AppTheme.discountRed,
+                ),
+              ],
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 10),
                 child: Divider(),
@@ -294,7 +376,7 @@ class _CartItemCard extends StatelessWidget {
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
   final VoidCallback onRemove;
-  final String Function(double) formatPrice;
+  final String Function(num) formatPrice;
 
   const _CartItemCard({
     required this.item,

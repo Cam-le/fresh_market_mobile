@@ -72,7 +72,8 @@ class AppState extends ChangeNotifier {
         for (final i in (o['items'] as List? ?? [])) {
           final product = _findProduct(i['id'] as String);
           if (product != null) {
-            items.add(CartItem(product: product, quantity: i['qty'] as int? ?? 1));
+            items.add(
+                CartItem(product: product, quantity: i['qty'] as int? ?? 1));
           }
         }
         if (items.isNotEmpty) {
@@ -80,7 +81,8 @@ class AppState extends ChangeNotifier {
             id: o['id'] as String,
             items: items,
             total: (o['total'] as num).toDouble(),
-            createdAt: DateTime.fromMillisecondsSinceEpoch(o['createdAt'] as int),
+            createdAt:
+                DateTime.fromMillisecondsSinceEpoch(o['createdAt'] as int),
             address: o['address'] as String,
             status: _parseStatus(o['status'] as String? ?? ''),
           ));
@@ -105,16 +107,18 @@ class AppState extends ChangeNotifier {
   Future<void> _saveOrders() async {
     await SessionCache.setJson(
       SessionCache.kOrders,
-      orders.map((o) => {
-        'id': o.id,
-        'total': o.total,
-        'createdAt': o.createdAt.millisecondsSinceEpoch,
-        'address': o.address,
-        'status': o.status.name,
-        'items': o.items
-            .map((i) => {'id': i.product.id, 'qty': i.quantity})
-            .toList(),
-      }).toList(),
+      orders
+          .map((o) => {
+                'id': o.id,
+                'total': o.total,
+                'createdAt': o.createdAt.millisecondsSinceEpoch,
+                'address': o.address,
+                'status': o.status.name,
+                'items': o.items
+                    .map((i) => {'id': i.product.id, 'qty': i.quantity})
+                    .toList(),
+              })
+          .toList(),
     );
   }
 
@@ -165,7 +169,7 @@ class AppState extends ChangeNotifier {
     final earned = (cart.subtotal / 1000).floor();
     loyaltyPoints += earned;
     _saveLoyalty();
-    cart.clear();
+    cart.clear(); // also clears discount via CartModel.clear()
     _saveOrders();
     notifyListeners();
   }
