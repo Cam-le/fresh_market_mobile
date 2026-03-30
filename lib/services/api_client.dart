@@ -53,6 +53,19 @@ class ApiClient {
     });
   }
 
+  /// GET without auth (guest endpoints like /news/GUEST)
+  static Future<Map<String, dynamic>> getPublic(String path) async {
+    return _execute(() async {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl$path'),
+            headers: await _headers(auth: false),
+          )
+          .timeout(_timeout);
+      return _parse(response);
+    });
+  }
+
   /// POST with auth — auto-refreshes token on 401
   static Future<Map<String, dynamic>> post(
     String path,

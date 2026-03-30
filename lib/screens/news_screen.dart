@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../data/app_data.dart';
 import '../models/news.dart';
+import '../services/blog_service.dart';
 import '../theme/app_theme.dart';
 import 'news_detail_screen.dart';
 
@@ -13,12 +13,41 @@ class NewsScreen extends StatefulWidget {
 
 class _NewsScreenState extends State<NewsScreen> {
   String _selectedCategory = 'Tất cả';
+  List<NewsArticle> _articles = [];
+  bool _isLoading = true;
+  bool _fromMock = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadArticles();
+  }
+
+  Future<void> _loadArticles() async {
+    setState(() => _isLoading = true);
+
+    final result = await BlogService.getAll();
+    final isMock = result.isNotEmpty &&
+        result.every(
+            (a) => NewsArticle.mockList.any((m) => m.newsId == a.newsId));
+
+    if (!mounted) return;
+    setState(() {
+      _articles = result;
+      _fromMock = isMock;
+      _isLoading = false;
+    });
+  }
+
+  List<String> get _categories {
+    final cats = _articles.map((a) => a.category).toSet().toList();
+    cats.sort();
+    return ['Tất cả', ...cats];
+  }
 
   List<NewsArticle> get _filtered {
-    if (_selectedCategory == 'Tất cả') return AppData.articles;
-    return AppData.articles
-        .where((a) => a.category == _selectedCategory)
-        .toList();
+    if (_selectedCategory == 'Tất cả') return _articles;
+    return _articles.where((a) => a.category == _selectedCategory).toList();
   }
 
   void _openArticle(NewsArticle article) {
@@ -30,26 +59,28 @@ class _NewsScreenState extends State<NewsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final articles = _filtered;
-    final featured = articles.isNotEmpty ? articles.first : null;
-    final rest = articles.length > 1 ? articles.sublist(1) : <NewsArticle>[];
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: CustomScrollView(
         slivers: [
           _buildAppBar(),
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCategoryTabs(),
-                if (featured != null) _buildFeaturedCard(featured),
-                if (rest.isNotEmpty) _buildListSection(rest),
-                const SizedBox(height: 100),
-              ],
+          if (_isLoading)
+            const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()))
+          else if (_articles.isEmpty)
+            SliverFillRemaining(child: _buildEmpty())
+          else
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_fromMock) _buildMockBanner(),
+                  _buildCategoryTabs(),
+                  _buildContent(),
+                  const SizedBox(height: 100),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -82,15 +113,57 @@ class _NewsScreenState extends State<NewsScreen> {
     );
   }
 
+  Widget _buildMockBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: AppTheme.accentOrange.withValues(alpha: 0.12),
+      child: const Row(
+        children: [
+          Icon(Icons.wifi_off, size: 14, color: AppTheme.accentOrange),
+          SizedBox(width: 6),
+          Text(
+            'Đang hiển thị dữ liệu demo — không kết nối được máy chủ',
+            style: TextStyle(fontSize: 11, color: AppTheme.accentOrange),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.article_outlined,
+              size: 56, color: AppTheme.textLight),
+          const SizedBox(height: 12),
+          const Text(
+            'Không có bài viết',
+            style: TextStyle(fontSize: 15, color: AppTheme.textGray),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _loadArticles,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Tải lại'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryTabs() {
+    final cats = _categories;
     return SizedBox(
       height: 48,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: AppData.newsCategories.length,
+        itemCount: cats.length,
         itemBuilder: (context, i) {
-          final cat = AppData.newsCategories[i];
+          final cat = cats[i];
           final selected = cat == _selectedCategory;
           return GestureDetector(
             onTap: () => setState(() => _selectedCategory = cat),
@@ -131,6 +204,30 @@ class _NewsScreenState extends State<NewsScreen> {
     );
   }
 
+  Widget _buildContent() {
+    final articles = _filtered;
+    if (articles.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(40),
+        child: Center(
+          child: Text(
+            'Không có bài viết trong danh mục này',
+            style: TextStyle(color: AppTheme.textGray),
+          ),
+        ),
+      );
+    }
+    final featured = articles.first;
+    final rest = articles.length > 1 ? articles.sublist(1) : <NewsArticle>[];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFeaturedCard(featured),
+        if (rest.isNotEmpty) _buildListSection(rest),
+      ],
+    );
+  }
+
   Widget _buildFeaturedCard(NewsArticle article) {
     return GestureDetector(
       onTap: () => _openArticle(article),
@@ -150,7 +247,6 @@ class _NewsScreenState extends State<NewsScreen> {
           borderRadius: BorderRadius.circular(16),
           child: Stack(
             children: [
-              // Image
               SizedBox(
                 height: 220,
                 width: double.infinity,
@@ -161,7 +257,6 @@ class _NewsScreenState extends State<NewsScreen> {
                       Container(color: AppTheme.primaryGreen),
                 ),
               ),
-              // Gradient overlay
               Container(
                 height: 220,
                 decoration: BoxDecoration(
@@ -175,7 +270,6 @@ class _NewsScreenState extends State<NewsScreen> {
                   ),
                 ),
               ),
-              // Content
               Positioned(
                 left: 16,
                 right: 16,
@@ -199,15 +293,6 @@ class _NewsScreenState extends State<NewsScreen> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Icon(Icons.person_outline,
-                            size: 12, color: Colors.white70),
-                        const SizedBox(width: 4),
-                        Text(
-                          article.author,
-                          style: const TextStyle(
-                              fontSize: 11, color: Colors.white70),
-                        ),
-                        const SizedBox(width: 12),
                         const Icon(Icons.calendar_today_outlined,
                             size: 11, color: Colors.white70),
                         const SizedBox(width: 4),
@@ -216,21 +301,11 @@ class _NewsScreenState extends State<NewsScreen> {
                           style: const TextStyle(
                               fontSize: 11, color: Colors.white70),
                         ),
-                        const Spacer(),
-                        const Icon(Icons.remove_red_eye_outlined,
-                            size: 12, color: Colors.white70),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${article.views}',
-                          style: const TextStyle(
-                              fontSize: 11, color: Colors.white70),
-                        ),
                       ],
                     ),
                   ],
                 ),
               ),
-              // "Nổi bật" tag
               Positioned(
                 top: 12,
                 left: 12,
@@ -282,7 +357,7 @@ class _NewsScreenState extends State<NewsScreen> {
   }
 }
 
-// ── Reusable sub-widgets ─────────────────────────────────────────────────────
+// ── Reusable sub-widgets ──────────────────────────────────────────────────────
 
 class _CategoryBadge extends StatelessWidget {
   final String label;
@@ -334,7 +409,6 @@ class _ArticleListTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thumbnail
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(14),
@@ -354,7 +428,6 @@ class _ArticleListTile extends StatelessWidget {
                 ),
               ),
             ),
-            // Text content
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -375,28 +448,13 @@ class _ArticleListTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      'Biên tập bởi ${article.author} ngày ${article.date}',
-                      style: const TextStyle(
-                          fontSize: 10, color: AppTheme.textLight),
-                    ),
-                    const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(Icons.remove_red_eye_outlined,
+                        const Icon(Icons.calendar_today_outlined,
                             size: 11, color: AppTheme.textLight),
                         const SizedBox(width: 3),
                         Text(
-                          '${article.views}',
-                          style: const TextStyle(
-                              fontSize: 10, color: AppTheme.textLight),
-                        ),
-                        const SizedBox(width: 10),
-                        const Icon(Icons.share_outlined,
-                            size: 11, color: AppTheme.textLight),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${article.shares}',
+                          article.date,
                           style: const TextStyle(
                               fontSize: 10, color: AppTheme.textLight),
                         ),
