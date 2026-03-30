@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/auth_service.dart';
 import '../widgets/main_app.dart';
-import 'signup_screen.dart';
-
-// Demo accounts
-const _demoAccounts = {
-  'user@example.com': '123456',
-  'admin@anchsanhkhoe.vn': 'Admin@123',
-};
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,7 +11,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
@@ -26,32 +20,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _showForgotPassword() {
-    final ctrl = TextEditingController();
+    final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Quên mật khẩu'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Nhập email của bạn để nhận link đặt lại mật khẩu.'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: ctrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
+        title: const Text('Quên Mật Khẩu?'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.phone,
+          decoration: const InputDecoration(
+            hintText: 'Nhập số điện thoại',
+            prefixIcon: Icon(Icons.phone_outlined, size: 20),
+          ),
         ),
         actions: [
           TextButton(
@@ -61,10 +47,12 @@ class _LoginScreenState extends State<LoginScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Link đặt lại mật khẩu đã được gửi (demo)'),
-                behavior: SnackBarBehavior.floating,
-              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Hướng dẫn đặt lại mật khẩu đã được gửi!'),
+                  backgroundColor: AppTheme.primaryGreen,
+                ),
+              );
             },
             child: const Text('Gửi'),
           ),
@@ -78,11 +66,20 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text('Đăng nhập với $provider'),
-        content: Text(
-          'Tính năng đăng nhập với $provider đang được phát triển.\n\n'
-          'Vui lòng dùng tài khoản demo:\n'
-          'Email: user@example.com\n'
-          'Mật khẩu: 123456',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tính năng đăng nhập với $provider đang được phát triển.\n\n'
+              'Vui lòng dùng tài khoản demo:',
+            ),
+            const SizedBox(height: 8),
+            const Text('SĐT: 0961231158',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('Mật khẩu: 123456',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+          ],
         ),
         actions: [
           TextButton(
@@ -95,11 +92,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Vui lòng nhập email và mật khẩu.');
+    if (phone.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Vui lòng nhập đầy đủ thông tin');
       return;
     }
 
@@ -108,24 +105,38 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    await Future.delayed(const Duration(milliseconds: 800));
+    // Capture context-dependent objects before the async gap
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    final result = await AuthService.login(phone, password);
 
     if (!mounted) return;
-
-    final expectedPassword = _demoAccounts[email];
-    if (expectedPassword == null || expectedPassword != password) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Email hoặc mật khẩu không đúng.';
-      });
-      return;
-    }
 
     setState(() => _isLoading = false);
 
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainApp()),
+    if (!result.isSuccess) {
+      setState(() => _errorMessage = result.error);
+      return;
+    }
+
+    if (result.fromMock) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Chế độ demo — không kết nối được máy chủ'),
+          backgroundColor: AppTheme.accentOrange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+
+    navigator.pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (_, a, __) => const MainApp(),
+        transitionsBuilder: (_, a, __, child) =>
+            FadeTransition(opacity: a, child: child),
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
     );
   }
 
@@ -139,32 +150,32 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo + brand
+              // Logo
               Center(
                 child: Column(
                   children: [
                     Container(
-                      width: 72,
-                      height: 72,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
                         color: AppTheme.primaryGreen,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
                             color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       child: const Stack(
                         alignment: Alignment.center,
                         children: [
-                          Icon(Icons.fork_right, color: Colors.white, size: 36),
+                          Icon(Icons.fork_right, color: Colors.white, size: 40),
                           Positioned(
-                            top: 8,
+                            top: 10,
                             child: Icon(Icons.eco,
-                                color: Colors.white70, size: 18),
+                                color: Colors.white70, size: 20),
                           ),
                         ],
                       ),
@@ -173,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text(
                       'Ăn Sạch Sống Khỏe',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.primaryGreen,
                       ),
@@ -181,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 40),
 
               const Text(
                 'Đăng Nhập',
@@ -196,14 +207,11 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 children: [
                   const Text(
-                    'Bạn chưa có tài khoản? ',
+                    'Chưa có tài khoản? ',
                     style: TextStyle(fontSize: 14, color: AppTheme.textGray),
                   ),
                   GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SignupScreen()),
-                    ),
+                    onTap: () => Navigator.pushNamed(context, '/signup'),
                     child: const Text(
                       'Đăng kí ngay',
                       style: TextStyle(
@@ -217,61 +225,56 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Demo accounts hint
-              IgnorePointer(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
+              // Error message
+              if (_errorMessage != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                    color: AppTheme.discountRed.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: AppTheme.primaryGreen.withValues(alpha: 0.2)),
+                        color: AppTheme.discountRed.withValues(alpha: 0.3)),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.info_outline,
-                              size: 14, color: AppTheme.primaryGreen),
-                          SizedBox(width: 6),
-                          Text(
-                            'Tài khoản demo',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primaryGreen,
-                            ),
-                          ),
-                        ],
+                      const Icon(Icons.error_outline,
+                          color: AppTheme.discountRed, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                              color: AppTheme.discountRed, fontSize: 13),
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      _demoRow('user@example.com', '123456'),
-                      const SizedBox(height: 2),
-                      _demoRow('admin@anchsanhkhoe.vn', 'Admin@123'),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 16),
+              ],
 
-              // Email
+              // Phone
               const Text(
-                'E-mail',
+                'Số điện thoại',
                 style: TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.textGray,
-                  fontWeight: FontWeight.w500,
-                ),
+                    fontSize: 13,
+                    color: AppTheme.textGray,
+                    fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
               TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                onChanged: (_) => setState(() => _errorMessage = null),
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                onChanged: (_) {
+                  if (_errorMessage != null) {
+                    setState(() => _errorMessage = null);
+                  }
+                },
                 decoration: const InputDecoration(
-                  hintText: 'example@gmail.com',
-                  prefixIcon: Icon(Icons.email_outlined, size: 20),
+                  hintText: '09xxxxxxxx',
+                  prefixIcon: Icon(Icons.phone_outlined, size: 20),
                 ),
               ),
               const SizedBox(height: 16),
@@ -280,16 +283,19 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text(
                 'Mật Khẩu',
                 style: TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.textGray,
-                  fontWeight: FontWeight.w500,
-                ),
+                    fontSize: 13,
+                    color: AppTheme.textGray,
+                    fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                onChanged: (_) => setState(() => _errorMessage = null),
+                onChanged: (_) {
+                  if (_errorMessage != null) {
+                    setState(() => _errorMessage = null);
+                  }
+                },
                 decoration: InputDecoration(
                   hintText: '••••••••',
                   prefixIcon: const Icon(Icons.lock_outline, size: 20),
@@ -306,54 +312,35 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-
-              // Error message
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Icon(Icons.error_outline,
-                        size: 14, color: AppTheme.discountRed),
-                    const SizedBox(width: 6),
-                    Text(
-                      _errorMessage!,
-                      style: const TextStyle(
-                          fontSize: 13, color: AppTheme.discountRed),
-                    ),
-                  ],
-                ),
-              ],
-
               const SizedBox(height: 12),
 
-              // Remember + Forgot
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: Checkbox(
-                      value: _rememberMe,
-                      onChanged: (v) => setState(() => _rememberMe = v!),
-                      activeColor: AppTheme.primaryGreen,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                    ),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _rememberMe,
+                        onChanged: (v) =>
+                            setState(() => _rememberMe = v ?? false),
+                        activeColor: AppTheme.primaryGreen,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      const Text(
+                        'Ghi nhớ tôi',
+                        style:
+                            TextStyle(fontSize: 13, color: AppTheme.textGray),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Ghi nhớ tôi',
-                    style: TextStyle(fontSize: 13, color: AppTheme.textGray),
-                  ),
-                  const Spacer(),
                   GestureDetector(
-                    onTap: () => _showForgotPassword(),
+                    onTap: _showForgotPassword,
                     child: const Text(
                       'Quên Mật Khẩu?',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppTheme.primaryGreen,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -416,29 +403,36 @@ class _LoginScreenState extends State<LoginScreen> {
                 label: 'Tiếp tục với Facebook',
               ),
               const SizedBox(height: 32),
+
+              // Demo hint
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.2)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        color: AppTheme.primaryGreen, size: 16),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Demo: SĐT 0961231158 / Mật khẩu 123456',
+                        style: TextStyle(
+                            fontSize: 12, color: AppTheme.primaryGreen),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _demoRow(String email, String password) {
-    return Row(
-      children: [
-        const Icon(Icons.person_outline, size: 12, color: AppTheme.textGray),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            '$email  /  $password',
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppTheme.textGray,
-              fontFamily: 'monospace',
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -448,11 +442,8 @@ class _SocialButton extends StatelessWidget {
   final Widget icon;
   final String label;
 
-  const _SocialButton({
-    required this.onTap,
-    required this.icon,
-    required this.label,
-  });
+  const _SocialButton(
+      {required this.onTap, required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -478,14 +469,11 @@ class _SocialButton extends StatelessWidget {
           children: [
             icon,
             const SizedBox(width: 10),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppTheme.textDark,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textDark,
+                    fontWeight: FontWeight.w500)),
           ],
         ),
       ),
