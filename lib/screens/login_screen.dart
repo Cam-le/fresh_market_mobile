@@ -76,8 +76,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    // Capture context-dependent objects before the async gap
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
     final result = await AuthService.login(phone, password);
@@ -86,19 +84,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = false);
 
-    if (!result.isSuccess) {
-      setState(() => _errorMessage = result.error);
+    if (!result.isSuccess || result.fromMock) {
+      setState(() => _errorMessage =
+          result.error ?? 'Số điện thoại hoặc mật khẩu không đúng');
       return;
-    }
-
-    if (result.fromMock) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Chế độ demo — không kết nối được máy chủ'),
-          backgroundColor: AppTheme.accentOrange,
-          duration: Duration(seconds: 3),
-        ),
-      );
     }
 
     navigator.pushReplacement(
@@ -344,31 +333,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Demo hint
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.2)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline,
-                        color: AppTheme.primaryGreen, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Demo: SĐT 0961231158 / Mật khẩu 123456',
-                        style: TextStyle(
-                            fontSize: 12, color: AppTheme.primaryGreen),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
             ],
           ),
         ),
