@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../models/user.dart';
 import 'api_client.dart';
 import 'session_cache.dart';
@@ -19,8 +20,6 @@ class AuthResult<T> {
 
 class AuthService {
   // ── Mock fallback accounts ────────────────────────────────────────────────
-  // Used when the API is unreachable. Matches the old hardcoded map in
-  // login_screen.dart so demo always works.
   static const _mockAccounts = {
     '0961231158': '123456',
     '0123456789': '123456',
@@ -39,7 +38,6 @@ class AuthService {
 
   // ── Login ─────────────────────────────────────────────────────────────────
 
-  /// Attempts real API login; falls back to mock on network error.
   static Future<AuthResult<UserModel>> login(
       String phone, String password) async {
     try {
@@ -58,15 +56,21 @@ class AuthService {
         return const AuthResult.failure('Dữ liệu phản hồi không hợp lệ');
       }
 
-      // Persist tokens
       await _saveTokens(data);
 
+      // accountId is NOT returned by login endpoint — decode from JWT 'sub' claim
+      final token = _safeStr(data['token']);
+      final jwtPayload = _decodeJwtPayload(token);
+      final accountId = _safeInt(jwtPayload['sub'] ?? jwtPayload['accountId']);
+      final phoneFromJwt =
+          _safeStr(jwtPayload['phone'], fallback: phone.trim());
+
       final user = UserModel(
-        accountId: _safeInt(data['accountId']),
+        accountId: accountId,
         username: _safeStr(data['username']),
-        name: _safeStr(data['username']), // API login doesn't return full name
+        name: _safeStr(data['username']),
         email: '',
-        phone: phone.trim(),
+        phone: phoneFromJwt.isNotEmpty ? phoneFromJwt : phone.trim(),
         city: '',
         role: _safeInt(data['role']),
         joinedAt: DateTime.now(),
@@ -75,12 +79,10 @@ class AuthService {
       await SessionCache.setJson(SessionCache.kUser, _userToJson(user));
       return AuthResult.success(user);
     } on ApiException catch (e) {
-      // 401 = wrong credentials — real error, do NOT fall back to mock
       if (e.statusCode == 401 || e.statusCode == 400) {
         return const AuthResult.failure(
             'Số điện thoại hoặc mật khẩu không đúng');
       }
-      // Network / server error → fall back to mock
       return _mockLogin(phone, password);
     } catch (_) {
       return _mockLogin(phone, password);
@@ -100,7 +102,6 @@ class AuthService {
 
   // ── Register ──────────────────────────────────────────────────────────────
 
-  /// Attempts real API register; falls back to mock success on network error.
   static Future<AuthResult<UserModel>> register(
       String phone, String password) async {
     try {
@@ -128,7 +129,7 @@ class AuthService {
         email: _safeStr(data?['email']),
         phone: _safeStr(data?['phone'], fallback: phone.trim()),
         city: '',
-        role: 2, // CUSTOMER
+        role: 2,
         joinedAt: _safeDate(data?['createdDate']),
         avatarUrl: data?['avatarUrl'] as String?,
       );
@@ -136,10 +137,8 @@ class AuthService {
       return AuthResult.success(user);
     } on ApiException catch (e) {
       if (e.statusCode == 400 || e.statusCode == 409) {
-        // 409 = phone already exists; 400 = validation error
         return AuthResult.failure(e.message);
       }
-      // Network / server error → mock success for demo
       return AuthResult.success(
         UserModel(
           accountId: 0,
@@ -191,7 +190,34 @@ class AuthService {
         data['refreshTokenExpiredAt'] ?? '');
   }
 
-  // ── Safe JSON helpers (guards against unexpected API shapes) ──────────────
+  // ── JWT decoder ───────────────────────────────────────────────────────────
+
+  /// Decodes the payload section of a JWT without verifying the signature.
+  /// Returns an empty map on any parse failure — never throws.
+  static Map<String, dynamic> _decodeJwtPayload(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return {};
+      // JWT uses base64url — pad to a multiple of 4
+      var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      switch (payload.length % 4) {
+        case 2:
+          payload += '==';
+          break;
+        case 3:
+          payload += '=';
+          break;
+      }
+      final decoded = utf8.decode(base64Decode(payload));
+      final json = jsonDecode(decoded);
+      if (json is Map<String, dynamic>) return json;
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  // ── Safe JSON helpers ─────────────────────────────────────────────────────
 
   static Map<String, dynamic>? _safeMap(dynamic v) {
     if (v is Map<String, dynamic>) return v;

@@ -89,13 +89,13 @@ class AppData {
   static List<ProductCategory> get categories =>
       _liveCategories ??
       [
-        ProductCategory(
+        const ProductCategory(
             id: 'rau_cu', name: 'Rau Củ & Nấm', products: _vegetables),
-        ProductCategory(
+        const ProductCategory(
             id: 'trai_cay', name: 'Trái Cây Tươi Ngon', products: _fruits),
-        ProductCategory(
+        const ProductCategory(
             id: 'hai_san', name: 'Hải Sản & Thủy Sản', products: _seafood),
-        ProductCategory(
+        const ProductCategory(
             id: 'thit', name: 'Thịt, Cá, Trứng & Hải Sản', products: _meat),
       ];
 
