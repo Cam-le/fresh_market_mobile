@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'session_cache.dart';
 
@@ -53,7 +54,7 @@ class ApiClient {
     });
   }
 
-  /// GET without auth (guest endpoints like /news/GUEST)
+  /// GET without auth (guest endpoints)
   static Future<Map<String, dynamic>> getPublic(String path) async {
     return _execute(() async {
       final response = await http
@@ -117,16 +118,30 @@ class ApiClient {
 
   /// Parse HTTP response → Map. Throws [ApiException] on non-2xx.
   static Map<String, dynamic> _parse(http.Response response) {
+    // Always log non-2xx so we can see the real server error
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      debugPrint('[ApiClient] ${response.statusCode} ${response.request?.url}');
+      debugPrint('[ApiClient] raw body: ${response.body}');
+    }
+
     Map<String, dynamic> body;
     try {
       body = jsonDecode(response.body) as Map<String, dynamic>;
     } catch (_) {
-      throw ApiException(response.statusCode, 'Invalid JSON response');
+      // Body is not JSON — surface raw text as the error message
+      final raw = response.body.trim();
+      final msg = raw.isNotEmpty ? raw : 'Invalid response from server';
+      throw ApiException(response.statusCode, msg);
     }
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
     }
-    final msg = (body['message'] as String?) ?? 'Unknown error';
+
+    final msg = (body['message'] as String?) ??
+        (body['error'] as String?) ??
+        (body['title'] as String?) ??
+        'Unknown error';
     throw ApiException(response.statusCode, msg);
   }
 
@@ -141,7 +156,6 @@ class ApiClient {
         if (e.statusCode == 401) {
           final refreshed = await _tryRefresh();
           if (refreshed) return await call();
-          // Refresh failed — caller should handle logout
           rethrow;
         }
         rethrow;
@@ -150,7 +164,6 @@ class ApiClient {
   }
 
   /// Attempt to refresh the access token using the stored refresh token.
-  /// Returns true on success, false if refresh token is missing/expired.
   static Future<bool> _tryRefresh() async {
     final refreshToken =
         SessionCache.getJson(SessionCache.kRefreshToken) as String?;
@@ -188,7 +201,7 @@ class ApiClient {
         return true;
       }
     } catch (_) {
-      // Network error during refresh — not catastrophic, return false
+      // Network error during refresh
     }
     return false;
   }

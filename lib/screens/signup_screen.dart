@@ -26,31 +26,11 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  void _showSocialDemo(String provider) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Đăng ký với $provider'),
-        content: Text(
-          'Tính năng đăng ký với $provider đang được phát triển.\n\n'
-          'Vui lòng tạo tài khoản bằng số điện thoại và mật khẩu.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _handleSignup() async {
     final phone = _phoneController.text.trim();
     final password = _passwordController.text;
     final confirm = _confirmPasswordController.text;
 
-    // Basic validation
     if (phone.isEmpty || password.isEmpty || confirm.isEmpty) {
       setState(() => _errorMessage = 'Vui lòng nhập đầy đủ thông tin');
       return;
@@ -84,13 +64,9 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    final msg = result.fromMock
-        ? 'Đăng kí thành công! (Chế độ demo)'
-        : 'Đăng kí thành công!';
-
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
+      const SnackBar(
+        content: Text('Đăng kí thành công!'),
         backgroundColor: AppTheme.primaryGreen,
       ),
     );
@@ -326,87 +302,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // Divider
-              Row(
-                children: [
-                  const Expanded(child: Divider(color: Color(0xFFDDDDDD))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'Hoặc',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                    ),
-                  ),
-                  const Expanded(child: Divider(color: Color(0xFFDDDDDD))),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              _SocialButton(
-                onTap: () => _showSocialDemo('Google'),
-                icon: const Text('G',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF4285F4))),
-                label: 'Tiếp tục với Google',
-              ),
-              const SizedBox(height: 12),
-              _SocialButton(
-                onTap: () => _showSocialDemo('Facebook'),
-                icon: const Icon(Icons.facebook,
-                    color: Color(0xFF1877F2), size: 22),
-                label: 'Tiếp tục với Facebook',
-              ),
               const SizedBox(height: 32),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final Widget icon;
-  final String label;
-
-  const _SocialButton(
-      {required this.onTap, required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 10),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.textDark,
-                    fontWeight: FontWeight.w500)),
-          ],
         ),
       ),
     );
