@@ -45,17 +45,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _placeOrder() async {
+    // Capture before async gap
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
+
     final address =
         '${_nameController.text} • ${_phoneController.text} • ${_addressController.text}';
-    widget.appState.placeOrder(address);
-    setState(() => _isLoading = false);
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
+
+    try {
+      await widget.appState.placeOrder(
+        address,
+        paymentMethodIndex: _selectedPayment,
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      navigator.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const OrderSuccessScreen()),
         (route) => route.isFirst,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Đặt hàng thất bại, vui lòng thử lại'),
+          backgroundColor: AppTheme.discountRed,
+        ),
       );
     }
   }
@@ -126,7 +145,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(method['icon'],
+                        Icon(method['icon'] as IconData,
                             color: _selectedPayment == i
                                 ? AppTheme.primaryGreen
                                 : AppTheme.textGray,
@@ -136,11 +155,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(method['label'],
+                              Text(method['label'] as String,
                                   style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600)),
-                              Text(method['sub'],
+                              Text(method['sub'] as String,
                                   style: const TextStyle(
                                       fontSize: 12, color: AppTheme.textLight)),
                             ],
@@ -157,7 +176,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // Order items
           _SectionCard(
             title: 'Sản phẩm đặt hàng',
             icon: Icons.shopping_bag_outlined,
@@ -211,7 +229,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // Summary
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

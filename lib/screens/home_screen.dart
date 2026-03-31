@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/app_data.dart';
 import '../models/app_state.dart';
+import '../models/product.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_section.dart';
 import '../widgets/promo_banner.dart';
@@ -19,6 +20,34 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Emoji map: subCategoryName → emoji
+  // Falls back to a generic icon for any unlisted subcategory
+  static const _subCategoryEmoji = {
+    'Rau ăn lá': '🥬',
+    'Củ, Quả': '🥕',
+    'Nấm, Đậu Hủ': '🍄',
+    'Trái Việt Nam': '🍍',
+    'Trái Nhập Khẩu': '🍎',
+    'Hải Sản': '🐟',
+    'Thịt Heo': '🥩',
+    'Thịt Bò': '🐄',
+    'Thịt Gà, Vịt & Chim': '🍗',
+    'Trái Cây Sấy': '🌾',
+    'Khô Chế Biến Sẵn': '🦑',
+  };
+
+  // Fallback hardcoded chips when subcategories haven't loaded yet
+  static const _fallbackChips = [
+    {'icon': '🥦', 'label': 'Rau củ', 'catId': 'rau_cu'},
+    {'icon': '🍎', 'label': 'Trái cây', 'catId': 'trai_cay'},
+    {'icon': '🐟', 'label': 'Hải sản', 'catId': 'hai_san'},
+    {'icon': '🥩', 'label': 'Thịt', 'catId': 'thit'},
+    {'icon': '🍄', 'label': 'Nấm', 'catId': 'rau_cu'},
+    {'icon': '🍍', 'label': 'Trái VN', 'catId': 'trai_cay'},
+    {'icon': '🦑', 'label': 'Khô', 'catId': 'thuc_pham_kho'},
+    {'icon': '🐄', 'label': 'Bò', 'catId': 'thit'},
+  ];
+
   @override
   Widget build(BuildContext context) {
     final categories = AppData.categories;
@@ -229,87 +258,161 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickCategories() {
-    // id: null means "show all products in search"; mapped IDs open CategoryBrowseScreen
-    final cats = [
-      {'icon': '🥦', 'label': 'Rau củ', 'id': 'rau_cu'},
-      {'icon': '🍎', 'label': 'Trái cây', 'id': 'trai_cay'},
-      {'icon': '🐟', 'label': 'Hải sản', 'id': 'hai_san'},
-      {'icon': '🥩', 'label': 'Thịt', 'id': 'thit'},
-      {'icon': '🥚', 'label': 'Trứng', 'id': 'thit'},
-      {'icon': '🧀', 'label': 'Sữa', 'id': 'rau_cu'},
-      {'icon': '🌾', 'label': 'Ngũ cốc', 'id': 'trai_cay'},
-      {'icon': '🥜', 'label': 'Đậu', 'id': 'rau_cu'},
-    ];
+    final subCategories = AppData.subCategories;
+
+    // Use live subcategories if available, otherwise fallback chips
+    if (subCategories.isEmpty) {
+      return _buildFallbackChips();
+    }
 
     return SizedBox(
       height: 86,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: cats.length,
+        itemCount: subCategories.length,
         itemBuilder: (context, index) {
+          final sub = subCategories[index];
+          final emoji = _subCategoryEmoji[sub.subCategoryName] ?? '🛒';
+
           return GestureDetector(
-            onTap: () {
-              final catId = cats[index]['id'];
-              if (catId != null) {
-                final category = AppData.categories.firstWhere(
-                  (c) => c.id == catId,
-                  orElse: () => AppData.categories.first,
-                );
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CategoryBrowseScreen(
-                      category: category,
-                      appState: widget.appState,
-                    ),
-                  ),
-                );
-              }
-            },
-            child: SizedBox(
-              width: 64,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      cats[index]['icon']!,
-                      style: const TextStyle(fontSize: 22),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    cats[index]['label']!,
-                    style: const TextStyle(
-                      fontSize: 9,
-                      color: AppTheme.textGray,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
+            onTap: () => _openSubCategory(sub),
+            child: _QuickChip(emoji: emoji, label: sub.subCategoryName),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFallbackChips() {
+    return SizedBox(
+      height: 86,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: _fallbackChips.length,
+        itemBuilder: (context, index) {
+          final chip = _fallbackChips[index];
+          return GestureDetector(
+            onTap: () {
+              final catId = chip['catId']!;
+              final category = AppData.categories.firstWhere(
+                (c) => c.id == catId,
+                orElse: () => AppData.categories.first,
+              );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CategoryBrowseScreen(
+                    category: category,
+                    appState: widget.appState,
+                  ),
+                ),
+              );
+            },
+            child: _QuickChip(emoji: chip['icon']!, label: chip['label']!),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openSubCategory(SubCategory sub) {
+    // Filter live products by subCategoryName; fall back to parent category
+    final filtered = AppData.allProducts
+        .where((p) => p.subCategoryName == sub.subCategoryName)
+        .toList();
+
+    if (filtered.isNotEmpty) {
+      // Build a synthetic ProductCategory scoped to this subcategory
+      final syntheticCategory = ProductCategory(
+        id: 'sub_${sub.subCategoryId}',
+        name: sub.subCategoryName,
+        products: filtered,
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CategoryBrowseScreen(
+            category: syntheticCategory,
+            appState: widget.appState,
+          ),
+        ),
+      );
+    } else {
+      // Products not yet loaded or none in this subcategory —
+      // open the parent category instead
+      final parentCatId = _resolveCategoryIdFromApiName(sub.categoryName);
+      final parentCategory = AppData.categories.firstWhere(
+        (c) => c.id == parentCatId,
+        orElse: () => AppData.categories.first,
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CategoryBrowseScreen(
+            category: parentCategory,
+            appState: widget.appState,
+          ),
+        ),
+      );
+    }
+  }
+
+  static String _resolveCategoryIdFromApiName(String apiName) {
+    const map = {
+      'Rau, Củ & Nấm': 'rau_cu',
+      'Trái Cây': 'trai_cay',
+      'Thịt, Cá & Hải Sản': 'thit',
+      'Thực Phẩm Khô': 'thuc_pham_kho',
+    };
+    return map[apiName] ?? 'rau_cu';
+  }
+}
+
+class _QuickChip extends StatelessWidget {
+  final String emoji;
+  final String label;
+  const _QuickChip({required this.emoji, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 66,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: Text(emoji, style: const TextStyle(fontSize: 22)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 9,
+              color: AppTheme.textGray,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'product.dart';
 import 'user.dart';
 import '../data/app_data.dart';
 import '../services/session_cache.dart';
+import '../services/order_service.dart';
 
 class AppState extends ChangeNotifier {
   final CartModel cart = CartModel();
@@ -36,11 +37,14 @@ class AppState extends ChangeNotifier {
     final userJson = SessionCache.getJson(SessionCache.kUser);
     if (userJson is Map) {
       user = UserModel(
+        accountId: userJson['accountId'] as int? ?? 0,
+        username: userJson['username'] as String? ?? '',
         name: userJson['name'] as String? ?? user.name,
         email: userJson['email'] as String? ?? user.email,
         phone: userJson['phone'] as String? ?? user.phone,
         city: userJson['city'] as String? ?? user.city,
         avatarUrl: userJson['avatarUrl'] as String?,
+        role: userJson['role'] as int? ?? 2,
       );
     }
 
@@ -79,6 +83,7 @@ class AppState extends ChangeNotifier {
         if (items.isNotEmpty) {
           orders.add(Order(
             id: o['id'] as String,
+            apiOrderId: o['apiOrderId'] as String?,
             items: items,
             total: (o['total'] as num).toDouble(),
             createdAt:
@@ -110,6 +115,7 @@ class AppState extends ChangeNotifier {
       orders
           .map((o) => {
                 'id': o.id,
+                'apiOrderId': o.apiOrderId,
                 'total': o.total,
                 'createdAt': o.createdAt.millisecondsSinceEpoch,
                 'address': o.address,
@@ -124,11 +130,14 @@ class AppState extends ChangeNotifier {
 
   Future<void> _saveUser() async {
     await SessionCache.setJson(SessionCache.kUser, {
+      'accountId': user.accountId,
+      'username': user.username,
       'name': user.name,
       'email': user.email,
       'phone': user.phone,
       'city': user.city,
       'avatarUrl': user.avatarUrl,
+      'role': user.role,
     });
   }
 
@@ -156,22 +165,39 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void placeOrder(String address) {
-    if (cart.items.isEmpty) return;
-    final order = Order(
-      id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
+  /// Places an order. Tries the API first; falls back to local mock on failure.
+  /// Returns the created [Order] so the caller can navigate to the success screen.
+  Future<Order> placeOrder(String address, {int paymentMethodIndex = 0}) async {
+    if (cart.items.isEmpty) {
+      // Return a minimal dummy order — caller should guard against empty cart
+      return Order(
+        id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
+        items: const [],
+        total: 0,
+        createdAt: DateTime.now(),
+        address: address,
+      );
+    }
+
+    final result = await OrderService.create(
       items: List.from(cart.items),
       total: cart.total,
-      createdAt: DateTime.now(),
       address: address,
+      paymentMethodIndex: paymentMethodIndex,
     );
+
+    final order = result.order;
     orders.insert(0, order);
+
     final earned = (cart.subtotal / 1000).floor();
     loyaltyPoints += earned;
     _saveLoyalty();
-    cart.clear(); // also clears discount via CartModel.clear()
+
+    cart.clear();
     _saveOrders();
     notifyListeners();
+
+    return order;
   }
 
   void cancelOrder(String orderId) {

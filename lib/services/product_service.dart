@@ -3,7 +3,6 @@ import '../models/product.dart';
 import 'api_client.dart';
 
 class ProductService {
-  // Maps API categoryName strings → our internal ProductCategory ids
   static const _categoryIdMap = {
     'Rau, Củ & Nấm': 'rau_cu',
     'Trái Cây': 'trai_cay',
@@ -11,7 +10,6 @@ class ProductService {
     'Thực Phẩm Khô': 'thuc_pham_kho',
   };
 
-  // Display names for category ids
   static const _categoryNameMap = {
     'rau_cu': 'Rau Củ & Nấm',
     'trai_cay': 'Trái Cây Tươi Ngon',
@@ -20,7 +18,6 @@ class ProductService {
     'thuc_pham_kho': 'Thực Phẩm Khô',
   };
 
-  // Category order for display
   static const _categoryOrder = [
     'rau_cu',
     'trai_cay',
@@ -29,67 +26,87 @@ class ProductService {
     'thuc_pham_kho',
   ];
 
-  /// Fetches all products from the API and writes them into [AppData] cache.
-  /// On any failure, [AppData] keeps serving mock data — no error propagates.
+  /// Fetches products AND subcategories in parallel.
+  /// On any failure both caches keep serving mock/empty data.
   static Future<void> fetchAll() async {
+    await Future.wait([
+      _fetchProducts(),
+      _fetchSubCategories(),
+    ]);
+  }
+
+  static Future<void> _fetchProducts() async {
     try {
       final response = await ApiClient.get('/product');
-
       if (response['success'] != true) return;
 
       final rawList = response['data'];
       if (rawList == null || rawList is! List) return;
 
       final products = <Product>[];
-
       for (final item in rawList) {
         if (item is! Map<String, dynamic>) continue;
         try {
           final categoryId = _resolveCategoryId(item);
-          final product = Product.fromJson(item, categoryId);
-          products.add(product);
+          products.add(Product.fromJson(item, categoryId));
         } catch (_) {
-          // Skip malformed individual product — don't abort the whole list
           continue;
         }
       }
 
-      if (products.isEmpty) return; // Don't wipe mock with empty list
-
-      final categories = _buildCategories(products);
-      AppData.setLiveData(products: products, categories: categories);
+      if (products.isEmpty) return;
+      AppData.setLiveData(
+        products: products,
+        categories: _buildCategories(products),
+      );
     } catch (_) {
-      // Network error or unexpected shape — silently keep mock data
+      // Silently keep mock data
     }
   }
 
-  /// Fetches a single product by its API productId.
-  /// Returns null on any failure — caller falls back to the cached product.
+  static Future<void> _fetchSubCategories() async {
+    try {
+      final response = await ApiClient.get('/sub-category');
+      if (response['success'] != true) return;
+
+      final rawList = response['data'];
+      if (rawList == null || rawList is! List) return;
+
+      final subCategories = <SubCategory>[];
+      for (final item in rawList) {
+        if (item is! Map<String, dynamic>) continue;
+        try {
+          subCategories.add(SubCategory.fromJson(item));
+        } catch (_) {
+          continue;
+        }
+      }
+
+      if (subCategories.isNotEmpty) {
+        AppData.setSubCategories(subCategories);
+      }
+    } catch (_) {
+      // Silently keep empty subcategory list
+    }
+  }
+
   static Future<Product?> fetchById(int productId) async {
     try {
       final response = await ApiClient.get('/product/$productId');
       if (response['success'] != true) return null;
-
       final data = response['data'];
       if (data is! Map<String, dynamic>) return null;
-
-      final categoryId = _resolveCategoryId(data);
-      return Product.fromJson(data, categoryId);
+      return Product.fromJson(data, _resolveCategoryId(data));
     } catch (_) {
       return null;
     }
   }
 
-  // ── Internals ──────────────────────────────────────────────────────────────
-
-  /// Resolves the API's categoryName to our internal category id.
-  /// Falls back to 'rau_cu' so the product still appears somewhere.
   static String _resolveCategoryId(Map<String, dynamic> json) {
-    final apiCategoryName = json['categoryName'] as String? ?? '';
-    return _categoryIdMap[apiCategoryName] ?? 'rau_cu';
+    final name = json['categoryName'] as String? ?? '';
+    return _categoryIdMap[name] ?? 'rau_cu';
   }
 
-  /// Groups products by category and returns ordered [ProductCategory] list.
   static List<ProductCategory> _buildCategories(List<Product> products) {
     final grouped = <String, List<Product>>{};
     for (final p in products) {
@@ -97,8 +114,6 @@ class ProductService {
     }
 
     final result = <ProductCategory>[];
-
-    // Add in preferred display order first
     for (final catId in _categoryOrder) {
       final catProducts = grouped[catId];
       if (catProducts != null && catProducts.isNotEmpty) {
@@ -109,8 +124,6 @@ class ProductService {
         ));
       }
     }
-
-    // Add any unexpected categories from the API that aren't in our order list
     for (final entry in grouped.entries) {
       if (!_categoryOrder.contains(entry.key) && entry.value.isNotEmpty) {
         result.add(ProductCategory(
@@ -120,7 +133,6 @@ class ProductService {
         ));
       }
     }
-
     return result;
   }
 }

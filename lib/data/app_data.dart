@@ -31,13 +31,36 @@ class PromoVoucher {
   }
 }
 
+/// A subcategory as returned by GET /sub-category
+class SubCategory {
+  final int subCategoryId;
+  final String categoryName; // parent category name from API
+  final String subCategoryName;
+
+  const SubCategory({
+    required this.subCategoryId,
+    required this.categoryName,
+    required this.subCategoryName,
+  });
+
+  factory SubCategory.fromJson(Map<String, dynamic> json) {
+    return SubCategory(
+      subCategoryId: (json['subCategoryId'] as num?)?.toInt() ?? 0,
+      categoryName: (json['categoryName'] as String?) ?? '',
+      subCategoryName: (json['subCategoryName'] as String?) ?? '',
+    );
+  }
+}
+
 class AppData {
-  // ── Live cache (written by ProductService after a successful API fetch) ─────
-  // When non-null, allProducts and categories use live data instead of mock.
+  // ── Live product cache (written by ProductService) ─────────────────────────
   static List<Product>? _liveProducts;
   static List<ProductCategory>? _liveCategories;
 
-  /// Called by ProductService after a successful API fetch.
+  // ── Live subcategory cache (written by ProductService) ─────────────────────
+  static List<SubCategory>? _liveSubCategories;
+
+  /// Called by ProductService after a successful products + categories fetch.
   static void setLiveData({
     required List<Product> products,
     required List<ProductCategory> categories,
@@ -46,13 +69,19 @@ class AppData {
     _liveCategories = categories;
   }
 
-  /// Clears live cache — reverts to mock data (e.g. on logout).
+  /// Called by ProductService after a successful subcategory fetch.
+  static void setSubCategories(List<SubCategory> subCategories) {
+    _liveSubCategories = subCategories;
+  }
+
+  /// Clears all live caches (e.g. on logout).
   static void clearLiveData() {
     _liveProducts = null;
     _liveCategories = null;
+    _liveSubCategories = null;
   }
 
-  // ── Public getters — live data takes priority, mock is the fallback ─────────
+  // ── Public getters ─────────────────────────────────────────────────────────
 
   static List<Product> get allProducts =>
       _liveProducts ?? [..._vegetables, ..._fruits, ..._seafood, ..._meat];
@@ -60,17 +89,21 @@ class AppData {
   static List<ProductCategory> get categories =>
       _liveCategories ??
       [
-        const ProductCategory(
+        ProductCategory(
             id: 'rau_cu', name: 'Rau Củ & Nấm', products: _vegetables),
-        const ProductCategory(
+        ProductCategory(
             id: 'trai_cay', name: 'Trái Cây Tươi Ngon', products: _fruits),
-        const ProductCategory(
+        ProductCategory(
             id: 'hai_san', name: 'Hải Sản & Thủy Sản', products: _seafood),
-        const ProductCategory(
+        ProductCategory(
             id: 'thit', name: 'Thịt, Cá, Trứng & Hải Sản', products: _meat),
       ];
 
-  // Legacy named getters for any code that still references them directly
+  /// Returns live subcategories, or an empty list when not yet loaded.
+  /// HomeScreen falls back to its hardcoded chips when this is empty.
+  static List<SubCategory> get subCategories => _liveSubCategories ?? [];
+
+  // Legacy named getters
   static List<Product> get vegetables =>
       _liveProducts?.where((p) => p.category == 'rau_cu').toList() ??
       _vegetables;
@@ -81,7 +114,7 @@ class AppData {
   static List<Product> get meat =>
       _liveProducts?.where((p) => p.category == 'thit').toList() ?? _meat;
 
-  // ── Static mock data (unchanged — always available as fallback) ─────────────
+  // ── Static mock data ───────────────────────────────────────────────────────
 
   static const List<Product> _vegetables = [
     Product(
@@ -329,8 +362,6 @@ class AppData {
     ),
   ];
 
-  // ── Vouchers & Banners (unchanged) ──────────────────────────────────────────
-
   static const List<PromoVoucher> vouchers = [
     PromoVoucher(
       code: 'WELCOME50',
@@ -344,7 +375,7 @@ class AppData {
     PromoVoucher(
       code: 'FREESHIP',
       title: 'Miễn phí vận chuyển',
-      description: 'Giảm 25.000đ (tương đương phí ship) không giới hạn đơn',
+      description: 'Giảm 25.000đ không giới hạn đơn',
       expiry: '15/04/2026',
       discount: 25000,
       isPercent: false,
