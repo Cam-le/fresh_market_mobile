@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fresh_market/screens/signup_screen.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
 import '../widgets/main_app.dart';
@@ -55,36 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             },
             child: const Text('Gửi'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSocialDemo(String provider) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Đăng nhập với $provider'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tính năng đăng nhập với $provider đang được phát triển.\n\n'
-              'Vui lòng dùng tài khoản demo:',
-            ),
-            const SizedBox(height: 8),
-            const Text('SĐT: 0961231158',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-            const Text('Mật khẩu: 123456',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
           ),
         ],
       ),
@@ -211,7 +182,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(fontSize: 14, color: AppTheme.textGray),
                   ),
                   GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/signup'),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const SignupScreen())),
                     child: const Text(
                       'Đăng kí ngay',
                       style: TextStyle(
@@ -370,40 +344,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Divider
-              Row(
-                children: [
-                  const Expanded(child: Divider(color: Color(0xFFDDDDDD))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'Hoặc',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                    ),
-                  ),
-                  const Expanded(child: Divider(color: Color(0xFFDDDDDD))),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              _SocialButton(
-                onTap: () => _showSocialDemo('Google'),
-                icon: const Text('G',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF4285F4))),
-                label: 'Tiếp tục với Google',
-              ),
-              const SizedBox(height: 12),
-              _SocialButton(
-                onTap: () => _showSocialDemo('Facebook'),
-                icon: const Icon(Icons.facebook,
-                    color: Color(0xFF1877F2), size: 22),
-                label: 'Tiếp tục với Facebook',
-              ),
-              const SizedBox(height: 32),
-
               // Demo hint
               Container(
                 padding: const EdgeInsets.all(12),
@@ -431,50 +371,6 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final Widget icon;
-  final String label;
-
-  const _SocialButton(
-      {required this.onTap, required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 10),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.textDark,
-                    fontWeight: FontWeight.w500)),
-          ],
         ),
       ),
     );

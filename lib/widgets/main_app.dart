@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/app_state.dart';
+import '../services/product_service.dart';
 import '../screens/home_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/cart_screen.dart';
@@ -21,7 +22,21 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-    _appState.loadFromCache();
+    _init();
+  }
+
+  Future<void> _init() async {
+    // Load session cache first so the UI is immediately responsive with
+    // whatever was stored (cart, orders, user, etc.)
+    await _appState.loadFromCache();
+
+    // Then fetch live products in the background. AppData.setLiveData() is
+    // called inside — screens reading AppData.categories / allProducts will
+    // automatically get live data on next build.
+    await ProductService.fetchAll();
+
+    // Trigger a rebuild so HomeScreen picks up the freshly loaded categories.
+    if (mounted) setState(() {});
   }
 
   @override
@@ -54,9 +69,10 @@ class _MainAppState extends State<MainApp> {
             decoration: const BoxDecoration(
               boxShadow: [
                 BoxShadow(
-                    color: Color(0x1A000000),
-                    blurRadius: 12,
-                    offset: Offset(0, -3)),
+                  color: Color(0x1A000000),
+                  blurRadius: 12,
+                  offset: Offset(0, -3),
+                ),
               ],
             ),
             child: BottomNavigationBar(
@@ -120,9 +136,10 @@ class _CartIcon extends StatelessWidget {
               child: Text(
                 count > 9 ? '9+' : '$count',
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),

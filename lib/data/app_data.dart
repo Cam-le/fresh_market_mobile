@@ -8,8 +8,6 @@ class PromoVoucher {
   final int discount;
   final bool isPercent;
   final int minOrder;
-
-  /// Max discount cap in VND (only used when isPercent == true; 0 = no cap)
   final int maxDiscount;
 
   const PromoVoucher({
@@ -23,7 +21,6 @@ class PromoVoucher {
     this.maxDiscount = 0,
   });
 
-  /// Computes the actual discount amount given a subtotal (in VND).
   int computeDiscount(double subtotal) {
     if (subtotal < minOrder) return 0;
     if (isPercent) {
@@ -35,7 +32,58 @@ class PromoVoucher {
 }
 
 class AppData {
-  static const List<Product> vegetables = [
+  // ── Live cache (written by ProductService after a successful API fetch) ─────
+  // When non-null, allProducts and categories use live data instead of mock.
+  static List<Product>? _liveProducts;
+  static List<ProductCategory>? _liveCategories;
+
+  /// Called by ProductService after a successful API fetch.
+  static void setLiveData({
+    required List<Product> products,
+    required List<ProductCategory> categories,
+  }) {
+    _liveProducts = products;
+    _liveCategories = categories;
+  }
+
+  /// Clears live cache — reverts to mock data (e.g. on logout).
+  static void clearLiveData() {
+    _liveProducts = null;
+    _liveCategories = null;
+  }
+
+  // ── Public getters — live data takes priority, mock is the fallback ─────────
+
+  static List<Product> get allProducts =>
+      _liveProducts ?? [..._vegetables, ..._fruits, ..._seafood, ..._meat];
+
+  static List<ProductCategory> get categories =>
+      _liveCategories ??
+      [
+        const ProductCategory(
+            id: 'rau_cu', name: 'Rau Củ & Nấm', products: _vegetables),
+        const ProductCategory(
+            id: 'trai_cay', name: 'Trái Cây Tươi Ngon', products: _fruits),
+        const ProductCategory(
+            id: 'hai_san', name: 'Hải Sản & Thủy Sản', products: _seafood),
+        const ProductCategory(
+            id: 'thit', name: 'Thịt, Cá, Trứng & Hải Sản', products: _meat),
+      ];
+
+  // Legacy named getters for any code that still references them directly
+  static List<Product> get vegetables =>
+      _liveProducts?.where((p) => p.category == 'rau_cu').toList() ??
+      _vegetables;
+  static List<Product> get fruits =>
+      _liveProducts?.where((p) => p.category == 'trai_cay').toList() ?? _fruits;
+  static List<Product> get seafood =>
+      _liveProducts?.where((p) => p.category == 'hai_san').toList() ?? _seafood;
+  static List<Product> get meat =>
+      _liveProducts?.where((p) => p.category == 'thit').toList() ?? _meat;
+
+  // ── Static mock data (unchanged — always available as fallback) ─────────────
+
+  static const List<Product> _vegetables = [
     Product(
       id: 'v1',
       name: 'Cải thảo',
@@ -131,7 +179,7 @@ class AppData {
     ),
   ];
 
-  static const List<Product> fruits = [
+  static const List<Product> _fruits = [
     Product(
       id: 'f1',
       name: 'Xoài cát Hòa Lộc',
@@ -181,7 +229,7 @@ class AppData {
     ),
   ];
 
-  static const List<Product> seafood = [
+  static const List<Product> _seafood = [
     Product(
       id: 's1',
       name: 'Tôm sú tươi',
@@ -232,7 +280,7 @@ class AppData {
     ),
   ];
 
-  static const List<Product> meat = [
+  static const List<Product> _meat = [
     Product(
       id: 'm1',
       name: 'Thịt ba chỉ heo',
@@ -281,31 +329,7 @@ class AppData {
     ),
   ];
 
-  static List<Product> get allProducts =>
-      [...vegetables, ...fruits, ...seafood, ...meat];
-
-  static List<ProductCategory> get categories => [
-        const ProductCategory(
-          id: 'rau_cu',
-          name: 'Rau Củ & Nấm',
-          products: vegetables,
-        ),
-        const ProductCategory(
-          id: 'trai_cay',
-          name: 'Trái Cây Tươi Ngon',
-          products: fruits,
-        ),
-        const ProductCategory(
-          id: 'hai_san',
-          name: 'Hải Sản & Thủy Sản',
-          products: seafood,
-        ),
-        const ProductCategory(
-          id: 'thit',
-          name: 'Thịt, Cá, Trứng & Hải Sản',
-          products: meat,
-        ),
-      ];
+  // ── Vouchers & Banners (unchanged) ──────────────────────────────────────────
 
   static const List<PromoVoucher> vouchers = [
     PromoVoucher(
