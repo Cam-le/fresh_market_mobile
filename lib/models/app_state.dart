@@ -169,7 +169,6 @@ class AppState extends ChangeNotifier {
   /// Returns the created [Order] so the caller can navigate to the success screen.
   Future<Order> placeOrder(String address, {int paymentMethodIndex = 0}) async {
     if (cart.items.isEmpty) {
-      // Return a minimal dummy order — caller should guard against empty cart
       return Order(
         id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
         items: const [],
@@ -191,12 +190,21 @@ class AppState extends ChangeNotifier {
 
     final earned = (cart.subtotal / 1000).floor();
     loyaltyPoints += earned;
-    _saveLoyalty();
 
+    // Remove cart listener so cart.clear() does not fire _onCartChanged,
+    // which would trigger a premature notifyListeners before saves complete.
+    cart.removeListener(_onCartChanged);
     cart.clear();
-    _saveOrders();
-    notifyListeners();
+    cart.addListener(_onCartChanged);
 
+    // Await all saves before notifying — UI rebuilds only after cache is consistent.
+    await Future.wait([
+      _saveOrders(),
+      _saveCart(),
+      _saveLoyalty(),
+    ]);
+
+    notifyListeners();
     return order;
   }
 

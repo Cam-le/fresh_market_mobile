@@ -64,7 +64,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       setState(() => _isLoading = false);
 
       navigator.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const OrderSuccessScreen()),
+        MaterialPageRoute(
+          builder: (_) => OrderSuccessScreen(appState: widget.appState),
+        ),
         (route) => route.isFirst,
       );
     } catch (e) {

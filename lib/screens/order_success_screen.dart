@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../models/app_state.dart';
+import 'orders_screen.dart';
 
 class OrderSuccessScreen extends StatefulWidget {
-  const OrderSuccessScreen({super.key});
+  /// Called when the user taps "Về trang chủ" — navigates back and switches
+  /// MainApp to the home tab (index 0).
+  final VoidCallback? onGoHome;
+
+  /// Called when the user taps "Xem đơn hàng" — navigates back and then
+  /// pushes OrdersScreen.
+  final AppState? appState;
+
+  const OrderSuccessScreen({super.key, this.onGoHome, this.appState});
 
   @override
   State<OrderSuccessScreen> createState() => _OrderSuccessScreenState();
@@ -28,6 +38,26 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _goHome() {
+    if (widget.onGoHome != null) {
+      widget.onGoHome!();
+    } else {
+      Navigator.of(context).popUntil((r) => r.isFirst);
+    }
+  }
+
+  void _viewOrders() {
+    // Pop back to MainApp first, then push OrdersScreen on top
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    if (widget.appState != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OrdersScreen(appState: widget.appState!),
+        ),
+      );
+    }
   }
 
   @override
@@ -79,7 +109,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
-                // Delivery steps
                 const _DeliveryStep(
                   icon: Icons.check_circle,
                   label: 'Đơn hàng đã xác nhận',
@@ -103,8 +132,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () =>
-                        Navigator.of(context).popUntil((r) => r.isFirst),
+                    onPressed: _goHome,
                     style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 54)),
                     child: const Text('Về trang chủ',
@@ -114,8 +142,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                 ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: () =>
-                      Navigator.of(context).popUntil((r) => r.isFirst),
+                  onPressed: _viewOrders,
                   child: const Text(
                     'Xem đơn hàng',
                     style: TextStyle(

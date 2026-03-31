@@ -73,7 +73,8 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     // Avatar
                     GestureDetector(
-                      onTap: () => _go(context, EditProfileScreen(appState: appState)),
+                      onTap: () =>
+                          _go(context, EditProfileScreen(appState: appState)),
                       child: Stack(
                         children: [
                           CircleAvatar(
@@ -177,7 +178,8 @@ class ProfileScreen extends StatelessWidget {
                         value: '$cartCount',
                         label: 'Giỏ hàng',
                         icon: Icons.shopping_cart_outlined,
-                        onTap: () => _go(context, CartScreen(appState: appState))),
+                        onTap: () =>
+                            _go(context, CartScreen(appState: appState))),
                     _StatDivider(),
                     _StatItem(
                         value: '$wishCount',
@@ -190,7 +192,8 @@ class ProfileScreen extends StatelessWidget {
                         value: '${appState.loyaltyPoints}',
                         label: 'Điểm',
                         icon: Icons.stars_outlined,
-                        onTap: () => _go(context, LoyaltyScreen(appState: appState))),
+                        onTap: () =>
+                            _go(context, LoyaltyScreen(appState: appState))),
                   ],
                 ),
               ),
@@ -253,68 +256,69 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.local_shipping_outlined,
                       label: 'Theo dõi đơn hàng',
                       onTap: () => showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Theo dõi đơn hàng'),
-                        content: const Text(
-                          'Chức năng theo dõi thời gian thực sẽ khả dụng sau khi tích hợp đơn vị vận chuyển. '
-                          'Hiện tại, bạn có thể xem trạng thái đơn hàng trong mục Đơn hàng của tôi.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Đóng'),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _go(context, OrdersScreen(appState: appState));
-                            },
-                            child: const Text('Xem đơn hàng'),
-                          ),
-                        ],
-                      ),
-                    )),
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Theo dõi đơn hàng'),
+                              content: const Text(
+                                'Chức năng theo dõi thời gian thực sẽ khả dụng sau khi tích hợp đơn vị vận chuyển. '
+                                'Hiện tại, bạn có thể xem trạng thái đơn hàng trong mục Đơn hàng của tôi.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Đóng'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _go(context,
+                                        OrdersScreen(appState: appState));
+                                  },
+                                  child: const Text('Xem đơn hàng'),
+                                ),
+                              ],
+                            ),
+                          )),
                   _MenuItem(
                       icon: Icons.assignment_return_outlined,
                       label: 'Đổi trả hàng',
                       onTap: () => showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Chính sách đổi trả'),
-                        content: const Text(
-                          '• Đổi trả trong vòng 24 giờ kể từ khi nhận hàng\n'
-                          '• Sản phẩm còn nguyên vẹn, chưa qua sử dụng\n'
-                          '• Liên hệ hotline 1800 1234 hoặc chat với chúng tôi\n\n'
-                          'Chức năng tạo yêu cầu đổi trả trực tuyến sẽ sớm ra mắt.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Đóng'),
-                          ),
-                        ],
-                      ),
-                    )),
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Chính sách đổi trả'),
+                              content: const Text(
+                                '• Đổi trả trong vòng 24 giờ kể từ khi nhận hàng\n'
+                                '• Sản phẩm còn nguyên vẹn, chưa qua sử dụng\n'
+                                '• Liên hệ hotline 1800 1234 hoặc chat với chúng tôi\n\n'
+                                'Chức năng tạo yêu cầu đổi trả trực tuyến sẽ sớm ra mắt.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Đóng'),
+                                ),
+                              ],
+                            ),
+                          )),
                   _MenuItem(
                       icon: Icons.rate_review_outlined,
                       label: 'Đánh giá của tôi',
                       onTap: () => showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Đánh giá của tôi'),
-                        content: const Text(
-                          'Bạn chưa có đánh giá nào. Hãy mua sắm và chia sẻ '
-                          'cảm nhận về sản phẩm để giúp cộng đồng nhé!',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Đóng'),
-                          ),
-                        ],
-                      ),
-                    )),
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Đánh giá của tôi'),
+                              content: const Text(
+                                'Bạn chưa có đánh giá nào. Hãy mua sắm và chia sẻ '
+                                'cảm nhận về sản phẩm để giúp cộng đồng nhé!',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Đóng'),
+                                ),
+                              ],
+                            ),
+                          )),
                 ],
               ),
 
@@ -349,7 +353,8 @@ class ProfileScreen extends StatelessWidget {
                   _MenuItem(
                       icon: Icons.stars_outlined,
                       label: 'Điểm tích lũy (${appState.loyaltyPoints}đ)',
-                      onTap: () => _go(context, LoyaltyScreen(appState: appState))),
+                      onTap: () =>
+                          _go(context, LoyaltyScreen(appState: appState))),
                 ],
               ),
 
@@ -365,8 +370,7 @@ class ProfileScreen extends StatelessWidget {
                   _MenuItem(
                       icon: Icons.lock_outline,
                       label: 'Đổi mật khẩu',
-                      onTap: () =>
-                          _go(context, const ChangePasswordScreen())),
+                      onTap: () => _go(context, const ChangePasswordScreen())),
                   _MenuItem(
                       icon: Icons.language,
                       label: 'Ngôn ngữ',
@@ -397,8 +401,11 @@ class ProfileScreen extends StatelessWidget {
                   icon: Icons.logout,
                   label: 'Đăng xuất',
                   color: AppTheme.discountRed,
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen())),
+                  onTap: () => Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  ),
                 ),
               ),
 
@@ -444,8 +451,8 @@ class _StatItem extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                       color: AppTheme.primaryGreen)),
               Text(label,
-                  style: const TextStyle(
-                      fontSize: 10, color: AppTheme.textGray)),
+                  style:
+                      const TextStyle(fontSize: 10, color: AppTheme.textGray)),
             ],
           ),
         ),
@@ -511,21 +518,18 @@ class _MenuItem extends StatelessWidget {
                 color: (color ?? AppTheme.primaryGreen).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon,
-                  size: 18, color: color ?? AppTheme.primaryGreen),
+              child:
+                  Icon(icon, size: 18, color: color ?? AppTheme.primaryGreen),
             ),
             const SizedBox(width: 12),
             Expanded(
                 child: Text(label,
                     style: TextStyle(
-                        fontSize: 14,
-                        color: c,
-                        fontWeight: FontWeight.w500))),
+                        fontSize: 14, color: c, fontWeight: FontWeight.w500))),
             if (badge != null)
               Container(
                 margin: const EdgeInsets.only(right: 6),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryGreen,
                   borderRadius: BorderRadius.circular(10),
@@ -538,11 +542,10 @@ class _MenuItem extends StatelessWidget {
               ),
             if (trailing != null)
               Text(trailing!,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.textLight)),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppTheme.textLight)),
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right,
-                size: 16, color: AppTheme.textLight),
+            Icon(Icons.chevron_right, size: 16, color: AppTheme.textLight),
           ],
         ),
       ),
