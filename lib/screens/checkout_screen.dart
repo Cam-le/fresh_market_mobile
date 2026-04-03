@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/app_state.dart';
+import '../data/app_data.dart';
+import '../services/voucher_service.dart';
 import '../theme/app_theme.dart';
 import 'order_success_screen.dart';
+import 'promo_code_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final AppState appState;
@@ -13,28 +16,46 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  final _nameController = TextEditingController(text: 'Nguyễn Văn A');
-  final _phoneController = TextEditingController(text: '0901 234 567');
-  final _addressController =
-      TextEditingController(text: '123 Nguyễn Huệ, Q.1, TP.HCM');
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _addressController;
   final _noteController = TextEditingController();
 
   int _selectedPayment = 0;
   bool _isLoading = false;
 
+  // Voucher state
+  PromoVoucher? _appliedVoucher;
+  List<PromoVoucher> _availableVouchers = [];
+  bool _vouchersLoaded = false;
+
   final List<Map<String, dynamic>> _paymentMethods = [
     {'icon': Icons.money, 'label': 'Tiền mặt khi nhận hàng', 'sub': 'COD'},
     {
-      'icon': Icons.credit_card,
-      'label': 'Thẻ tín dụng / Ghi nợ',
-      'sub': 'Visa, Mastercard'
-    },
-    {
-      'icon': Icons.account_balance_wallet,
-      'label': 'Ví điện tử',
-      'sub': 'MoMo, ZaloPay, VNPay'
+      'icon': Icons.account_balance_wallet_outlined,
+      'label': 'VNPay',
+      'sub': 'Thanh toán qua cổng VNPay'
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final u = widget.appState.user;
+    _nameController = TextEditingController(text: u.name);
+    _phoneController = TextEditingController(text: u.phone);
+    _addressController = TextEditingController(text: u.city);
+    _loadVouchers();
+  }
+
+  Future<void> _loadVouchers() async {
+    final vouchers = await VoucherService.fetchAll();
+    if (!mounted) return;
+    setState(() {
+      _availableVouchers = vouchers;
+      _vouchersLoaded = true;
+    });
+  }
 
   String _formatPrice(num price) {
     final formatted = price.toStringAsFixed(0).replaceAllMapped(
@@ -44,27 +65,75 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return '$formatted₫';
   }
 
+  double get _discountAmount {
+    if (_appliedVoucher == null) return 0;
+    final v = _appliedVoucher!;
+    final sub = widget.appState.cart.subtotal;
+    if (v.isPercent) return sub * v.discount / 100;
+    return v.discount.toDouble();
+  }
+
+  double get _orderTotal {
+    final cart = widget.appState.cart;
+    return (cart.subtotal + cart.shippingFee - _discountAmount)
+        .clamp(0, double.infinity);
+  }
+
+  Future<void> _openVoucherPicker() async {
+    final vouchers = _vouchersLoaded && _availableVouchers.isNotEmpty
+        ? _availableVouchers
+        : AppData.vouchers;
+
+    if (!mounted) return;
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PromoCodeScreen(
+          cartSubtotal: widget.appState.cart.subtotal,
+          availableVouchers: vouchers,
+          onApply: (v) {
+            setState(() => _appliedVoucher = v);
+            widget.appState.cart.applyDiscount(
+              code: v.code,
+              amount: v.isPercent
+                  ? widget.appState.cart.subtotal * v.discount / 100
+                  : v.discount.toDouble(),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _removeVoucher() {
+    setState(() => _appliedVoucher = null);
+    widget.appState.cart.clearDiscount();
+  }
+
   Future<void> _placeOrder() async {
-    // Capture before async gap
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
     setState(() => _isLoading = true);
 
-    final address =
-        '${_nameController.text} • ${_phoneController.text} • ${_addressController.text}';
-
     try {
       await widget.appState.placeOrder(
-        address,
+        _addressController.text.trim(),
+        shippingName: _nameController.text.trim(),
+        shippingPhone: _phoneController.text.trim(),
         paymentMethodIndex: _selectedPayment,
+        voucherIds: _appliedVoucher?.id != null && _appliedVoucher!.id != 0
+            ? [_appliedVoucher!.id]
+            : [],
       );
 
       if (!mounted) return;
       setState(() => _isLoading = false);
 
       navigator.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const OrderSuccessScreen()),
+        MaterialPageRoute(
+          builder: (_) => OrderSuccessScreen(appState: widget.appState),
+        ),
         (route) => route.isFirst,
       );
     } catch (e) {
@@ -120,6 +189,80 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           const SizedBox(height: 16),
+
+          // ── Voucher row ────────────────────────────────────────────────────
+          _SectionCard(
+            title: 'Mã giảm giá',
+            icon: Icons.confirmation_number_outlined,
+            child: _appliedVoucher == null
+                ? GestureDetector(
+                    onTap: _openVoucherPicker,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color:
+                                AppTheme.primaryGreen.withValues(alpha: 0.4)),
+                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFFE8F5E9),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.add_circle_outline,
+                              color: AppTheme.primaryGreen, size: 18),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Chọn mã giảm giá',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppTheme.primaryGreen,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right,
+                              color: AppTheme.primaryGreen, size: 18),
+                        ],
+                      ),
+                    ),
+                  )
+                : Row(
+                    children: [
+                      const Icon(Icons.check_circle,
+                          color: AppTheme.primaryGreen, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _appliedVoucher!.code,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.primaryGreen),
+                            ),
+                            Text(
+                              '-${_formatPrice(_discountAmount)}',
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.discountRed,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: _removeVoucher,
+                        child: const Icon(Icons.close,
+                            color: AppTheme.textGray, size: 18),
+                      ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 16),
+
           _SectionCard(
             title: 'Phương thức thanh toán',
             icon: Icons.payment_outlined,
@@ -250,20 +393,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         : _formatPrice(cart.shippingFee),
                     valueColor:
                         cart.shippingFee == 0 ? AppTheme.primaryGreen : null),
-                if (cart.discount > 0) ...[
+                if (_discountAmount > 0) ...[
                   const SizedBox(height: 8),
                   _Row(
-                    cart.appliedVoucherCode != null
-                        ? 'Mã "${cart.appliedVoucherCode}"'
-                        : 'Giảm giá',
-                    '-${_formatPrice(cart.discount)}',
+                    'Mã "${_appliedVoucher!.code}"',
+                    '-${_formatPrice(_discountAmount)}',
                     valueColor: AppTheme.discountRed,
                   ),
                 ],
                 const Padding(
                     padding: EdgeInsets.symmetric(vertical: 10),
                     child: Divider()),
-                _Row('Tổng thanh toán', _formatPrice(cart.total),
+                _Row('Tổng thanh toán', _formatPrice(_orderTotal),
                     isBold: true, valueColor: AppTheme.primaryGreen),
               ],
             ),
@@ -290,7 +431,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   height: 22,
                   child: CircularProgressIndicator(
                       color: Colors.white, strokeWidth: 2))
-              : Text('Đặt hàng • ${_formatPrice(cart.total)}',
+              : Text('Đặt hàng • ${_formatPrice(_orderTotal)}',
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w700)),
         ),

@@ -83,13 +83,14 @@ class AppState extends ChangeNotifier {
         if (items.isNotEmpty) {
           orders.add(Order(
             id: o['id'] as String,
-            apiOrderId: o['apiOrderId'] as String?,
+            apiOrderId: o['apiOrderId'] as int?,
             items: items,
             total: (o['total'] as num).toDouble(),
             createdAt:
                 DateTime.fromMillisecondsSinceEpoch(o['createdAt'] as int),
             address: o['address'] as String,
             status: _parseStatus(o['status'] as String? ?? ''),
+            paymentMethod: o['paymentMethod'] as String? ?? 'COD',
           ));
         }
       }
@@ -120,6 +121,7 @@ class AppState extends ChangeNotifier {
                 'createdAt': o.createdAt.millisecondsSinceEpoch,
                 'address': o.address,
                 'status': o.status.name,
+                'paymentMethod': o.paymentMethod,
                 'items': o.items
                     .map((i) => {'id': i.product.id, 'qty': i.quantity})
                     .toList(),
@@ -167,23 +169,32 @@ class AppState extends ChangeNotifier {
 
   /// Places an order. Tries the API first; falls back to local mock on failure.
   /// Returns the created [Order] so the caller can navigate to the success screen.
-  Future<Order> placeOrder(String address, {int paymentMethodIndex = 0}) async {
+  Future<Order> placeOrder(
+    String shippingAddress, {
+    String? shippingName,
+    String? shippingPhone,
+    int paymentMethodIndex = 0,
+    List<int> voucherIds = const [],
+  }) async {
     if (cart.items.isEmpty) {
-      // Return a minimal dummy order — caller should guard against empty cart
       return Order(
         id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
         items: const [],
         total: 0,
         createdAt: DateTime.now(),
-        address: address,
+        address: shippingAddress,
       );
     }
 
     final result = await OrderService.create(
       items: List.from(cart.items),
       total: cart.total,
-      address: address,
+      shippingName: shippingName ?? user.name,
+      shippingPhone: shippingPhone ?? user.phone,
+      shippingAddress: shippingAddress,
+      shippingFee: cart.shippingFee,
       paymentMethodIndex: paymentMethodIndex,
+      voucherIds: voucherIds,
     );
 
     final order = result.order;
@@ -191,21 +202,38 @@ class AppState extends ChangeNotifier {
 
     final earned = (cart.subtotal / 1000).floor();
     loyaltyPoints += earned;
-    _saveLoyalty();
 
+    // Detach listener so cart.clear() does not fire _onCartChanged prematurely.
+    cart.removeListener(_onCartChanged);
     cart.clear();
-    _saveOrders();
-    notifyListeners();
+    cart.addListener(_onCartChanged);
 
+    await Future.wait([
+      _saveOrders(),
+      _saveCart(),
+      _saveLoyalty(),
+    ]);
+
+    notifyListeners();
     return order;
   }
 
-  void cancelOrder(String orderId) {
+  /// Cancels an order locally and, if it has an API id, also via the API.
+  Future<void> cancelOrder(String orderId,
+      {String cancelReason = 'Khách hàng huỷ'}) async {
     final idx = orders.indexWhere((o) => o.id == orderId);
     if (idx == -1) return;
+
+    // Optimistic local update
     orders[idx].status = OrderStatus.cancelled;
     _saveOrders();
     notifyListeners();
+
+    // Fire API cancel if this is a real order (non-blocking — we already updated locally)
+    final apiId = orders[idx].apiOrderId;
+    if (apiId != null) {
+      await OrderService.cancel(apiId, cancelReason: cancelReason);
+    }
   }
 
   void reorder(Order order) {

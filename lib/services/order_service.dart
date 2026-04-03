@@ -3,7 +3,6 @@ import '../models/order.dart';
 import '../models/cart.dart';
 import '../models/product.dart';
 import '../data/app_data.dart';
-import '../services/session_cache.dart';
 import 'api_client.dart';
 
 class OrderResult {
@@ -13,165 +12,165 @@ class OrderResult {
 }
 
 class OrderService {
-  static const _paymentLabels = ['COD', 'CARD', 'EWALLET'];
+  static const _paymentLabels = ['COD', 'VNPAY'];
 
-  /// POST /orders then GET /orders/{id} to get fully hydrated order.
-  /// Falls back to local mock on any network/server error.
+  // ── Create ─────────────────────────────────────────────────────────────────
+
+  /// POST /order  →  builds an [Order] from the response + original cart items.
+  /// Throws [ApiException] on failure — caller is responsible for showing error.
   static Future<OrderResult> create({
     required List<CartItem> items,
     required double total,
-    required String address,
+    required String shippingName,
+    required String shippingPhone,
+    required String shippingAddress,
+    required double shippingFee,
     required int paymentMethodIndex,
+    List<int> voucherIds = const [],
   }) async {
     final paymentMethod = paymentMethodIndex < _paymentLabels.length
         ? _paymentLabels[paymentMethodIndex]
         : 'COD';
 
-    final userJson = SessionCache.getJson(SessionCache.kUser);
-    String userId = '0';
-    if (userJson is Map) {
-      final raw = userJson['accountId'];
-      if (raw is int && raw != 0) {
-        userId = raw.toString();
-      } else if (raw is String && raw.isNotEmpty && raw != '0') {
-        userId = raw;
-      }
-    }
-
-    final token = SessionCache.getJson(SessionCache.kAuthToken);
-    debugPrint(
-        '[OrderService] token=${token != null ? 'PRESENT (${token.toString().length} chars)' : 'NULL'} | userId=$userId');
-
     final apiItems = items.map((item) {
       final productId = item.product.productId ?? 0;
       final price = item.product.price;
       final originalPrice = item.product.originalPrice ?? price;
-      final discountPerItem =
-          originalPrice > price ? (originalPrice - price) : 0.0;
-      final subTotal = price * item.quantity;
+      final discount =
+          originalPrice > price ? (originalPrice - price) * item.quantity : 0.0;
       debugPrint(
-          '[OrderService] item: productId=$productId name=${item.product.name} qty=${item.quantity} price=$price');
+          '[OrderService] item: productId=$productId name=${item.product.name}'
+          ' qty=${item.quantity} price=$price');
       return {
         'productId': productId,
-        'productName': item.product.name,
         'quantity': item.quantity,
-        'discountPerItem': discountPerItem,
-        'subTotal': subTotal,
-        'price': price,
-        'createdAt': DateTime.now().toUtc().toIso8601String(),
+        'discount': discount,
       };
     }).toList();
 
+    final postResponse = await ApiClient.post('/order', {
+      'voucherIds': voucherIds,
+      'shippingName': shippingName,
+      'shippingPhone': shippingPhone,
+      'shippingAddress': shippingAddress,
+      'shippingFee': shippingFee,
+      'paymentMethod': paymentMethod,
+      'items': apiItems,
+    });
+
+    debugPrint('[OrderService] POST /order SUCCESS: $postResponse');
+
+    // The API wraps its payload in a "data" key.
+    final data = postResponse['data'];
+    final responseMap = data is Map<String, dynamic> ? data : postResponse;
+
+    final apiOrderId = _safeInt(responseMap['orderId']);
+    final displayId = apiOrderId != 0
+        ? apiOrderId.toString()
+        : 'ORD${DateTime.now().millisecondsSinceEpoch}';
+
+    final statusStr = _safeStr(responseMap['orderStatus'], fallback: 'PENDING');
+    final createdAtStr = responseMap['createdAtUtc'] as String?;
+    final createdAt = createdAtStr != null
+        ? (DateTime.tryParse(createdAtStr) ?? DateTime.now())
+        : DateTime.now();
+
+    final fullAddress = '$shippingName • $shippingPhone • $shippingAddress';
+
+    final order = Order(
+      id: displayId,
+      apiOrderId: apiOrderId != 0 ? apiOrderId : null,
+      items: List.from(items),
+      total: total,
+      createdAt: createdAt,
+      address: fullAddress,
+      status: _parseApiStatus(statusStr),
+      paymentMethod: paymentMethod,
+    );
+
+    return OrderResult(order);
+  }
+
+  // ── Fetch my orders ────────────────────────────────────────────────────────
+
+  /// GET /order/me  →  returns the list of orders for the current user.
+  /// Returns empty list on failure so the UI stays functional.
+  static Future<List<Order>> fetchMyOrders() async {
     try {
-      // Step 1: POST to create order
-      final postResponse = await ApiClient.post('/orders', {
-        'userId': userId,
-        'paymentMethod': paymentMethod,
-        'paymentStatus': 'PENDING',
-        'items': apiItems,
-      });
+      final response = await ApiClient.get('/order/me');
+      final data = response['data'];
+      if (data is! List) return [];
 
-      debugPrint('[OrderService] POST SUCCESS: $postResponse');
-
-      final apiOrderId = _safeStr(postResponse['orderId'],
-          fallback: 'ORD${DateTime.now().millisecondsSinceEpoch}');
-
-      // Step 2: GET to fetch full order details
-      Order order;
-      try {
-        final getResponse = await ApiClient.get('/orders/$apiOrderId');
-        debugPrint('[OrderService] GET SUCCESS: $getResponse');
-        order = _buildOrderFromGetResponse(
-          json: getResponse,
-          originalItems: items,
-          address: address,
-          fallbackTotal: total,
-        );
-      } catch (e) {
-        // GET failed — build order from POST response + original cart items
-        debugPrint('[OrderService] GET failed, using POST data: $e');
-        order = Order(
-          id: apiOrderId,
-          apiOrderId: apiOrderId,
-          items: List.from(items),
-          total: total,
-          createdAt: DateTime.now(),
-          address: address,
-          status: _parseApiStatus(
-              _safeStr(postResponse['orderStatus'], fallback: 'PENDING')),
-        );
+      final result = <Order>[];
+      for (final raw in data) {
+        if (raw is! Map<String, dynamic>) continue;
+        final order = _buildOrderFromRaw(raw, []);
+        if (order != null) result.add(order);
       }
-
-      return OrderResult(order);
-    } on ApiException catch (e) {
-      debugPrint(
-          '[OrderService] API EXCEPTION: status=${e.statusCode} msg=${e.message}');
-      if (e.statusCode == 401) rethrow;
-      return OrderResult(_mockOrder(items, total, address), fromMock: true);
+      return result;
     } catch (e) {
-      debugPrint('[OrderService] UNEXPECTED ERROR: $e');
-      return OrderResult(_mockOrder(items, total, address), fromMock: true);
+      debugPrint('[OrderService] fetchMyOrders error: $e');
+      return [];
     }
   }
 
-  /// Fetches a single order by orderId for display (e.g. order detail refresh).
-  /// Returns null on failure — caller keeps showing cached data.
-  static Future<Order?> fetchById(
-      String orderId, List<CartItem> originalItems) async {
+  // ── Cancel ─────────────────────────────────────────────────────────────────
+
+  /// DELETE /order  →  cancels an order by its numeric API id.
+  /// Returns true on success, false on failure.
+  static Future<bool> cancel(int orderId,
+      {String cancelReason = 'Khách hàng huỷ'}) async {
     try {
-      final response = await ApiClient.get('/orders/$orderId');
-      return _buildOrderFromGetResponse(
-        json: response,
-        originalItems: originalItems,
-        address: '',
-        fallbackTotal: _sumItems(response['items']),
-      );
-    } catch (_) {
-      return null;
+      await ApiClient.delete('/order', {
+        'orderId': orderId,
+        'cancelReason': cancelReason,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('[OrderService] cancel error: $e');
+      return false;
     }
   }
 
   // ── Builder ────────────────────────────────────────────────────────────────
 
-  /// Builds an [Order] from GET /orders/{id} response.
-  /// Uses original cart items when available; falls back to synthetic products
-  /// built from the API's raw item data for items not in local AppData.
-  static Order _buildOrderFromGetResponse({
-    required Map<String, dynamic> json,
-    required List<CartItem> originalItems,
-    required String address,
-    required double fallbackTotal,
-  }) {
-    final id = _safeStr(json['orderId'],
-        fallback: 'ORD${DateTime.now().millisecondsSinceEpoch}');
+  static Order? _buildOrderFromRaw(
+      Map<String, dynamic> json, List<CartItem> originalItems) {
+    final apiOrderId = _safeInt(json['orderId']);
+    if (apiOrderId == 0) return null;
+
+    final displayId = apiOrderId.toString();
     final statusStr = _safeStr(json['orderStatus'], fallback: 'PENDING');
     final createdAtStr = json['createdAtUtc'] as String?;
     final createdAt = createdAtStr != null
         ? (DateTime.tryParse(createdAtStr) ?? DateTime.now())
         : DateTime.now();
 
-    // Build display items — prefer original CartItems, fall back to API data
+    final address = [
+      _safeStr(json['shippingName']),
+      _safeStr(json['shippingPhone']),
+      _safeStr(json['shippingAddress']),
+    ].where((s) => s.isNotEmpty).join(' • ');
+
     final displayItems = _resolveItems(json['items'], originalItems);
-    final apiTotal = _sumItems(json['items']);
+    final total =
+        _safeDouble(json['totalAmount'], fallback: _sumItems(json['items']));
 
     return Order(
-      id: id,
-      apiOrderId: id,
+      id: displayId,
+      apiOrderId: apiOrderId,
       items: displayItems,
-      total: apiTotal > 0 ? apiTotal : fallbackTotal,
+      total: total,
       createdAt: createdAt,
       address: address,
       status: _parseApiStatus(statusStr),
+      paymentMethod: _safeStr(json['paymentMethod'], fallback: 'COD'),
     );
   }
 
-  /// Maps API raw items to CartItems.
-  /// For each API item, tries to find a matching product in originalItems
-  /// (by productId) first, then in AppData, then synthesises a minimal Product.
   static List<CartItem> _resolveItems(
       dynamic rawItems, List<CartItem> originalItems) {
     if (rawItems is! List || rawItems.isEmpty) {
-      // GET returned no items — use original cart items
       return List.from(originalItems);
     }
 
@@ -183,53 +182,51 @@ class OrderService {
       final price = _safeDouble(raw['price']);
       final productName = _safeStr(raw['productName'], fallback: 'Sản phẩm');
 
-      // 1. Match against original cart items by productId
+      // 1. Match original cart items by productId
       CartItem? match;
       if (productId != 0) {
         try {
-          match = originalItems.firstWhere(
-            (ci) => ci.product.productId == productId,
-          );
+          match = originalItems
+              .firstWhere((ci) => ci.product.productId == productId);
         } catch (_) {
           match = null;
         }
       }
-
       if (match != null) {
         result.add(CartItem(product: match.product, quantity: quantity));
         continue;
       }
 
-      // 2. Match against AppData by productId
+      // 2. Match AppData by productId
       Product? appProduct;
       if (productId != 0) {
         try {
-          appProduct = AppData.allProducts.firstWhere(
-            (p) => p.productId == productId,
-          );
+          appProduct =
+              AppData.allProducts.firstWhere((p) => p.productId == productId);
         } catch (_) {
           appProduct = null;
         }
       }
-
       if (appProduct != null) {
         result.add(CartItem(product: appProduct, quantity: quantity));
         continue;
       }
 
-      // 3. Synthesise a minimal Product from API data so UI never breaks
-      final synthetic = Product(
-        id: productId.toString(),
-        productId: productId,
-        name: productName,
-        price: price,
-        rating: 0,
-        reviewCount: 0,
-        imageUrl: '',
-        unit: '',
-        category: '',
-      );
-      result.add(CartItem(product: synthetic, quantity: quantity));
+      // 3. Synthesise minimal Product so UI never breaks
+      result.add(CartItem(
+        product: Product(
+          id: productId.toString(),
+          productId: productId,
+          name: productName,
+          price: price,
+          rating: 0,
+          reviewCount: 0,
+          imageUrl: '',
+          unit: '',
+          category: '',
+        ),
+        quantity: quantity,
+      ));
     }
 
     return result.isEmpty ? List.from(originalItems) : result;
@@ -241,7 +238,15 @@ class OrderService {
     if (rawItems is! List) return 0;
     double total = 0;
     for (final item in rawItems) {
-      if (item is Map) total += _safeDouble(item['subTotal']);
+      if (item is Map) {
+        final sub = _safeDouble(item['subTotal']);
+        if (sub > 0) {
+          total += sub;
+        } else {
+          total += _safeDouble(item['price']) *
+              _safeInt(item['quantity'], fallback: 1);
+        }
+      }
     }
     return total;
   }
@@ -264,18 +269,6 @@ class OrderService {
       default:
         return OrderStatus.pending;
     }
-  }
-
-  static Order _mockOrder(List<CartItem> items, double total, String address) {
-    return Order(
-      id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
-      apiOrderId: null,
-      items: List.from(items),
-      total: total,
-      createdAt: DateTime.now(),
-      address: address,
-      status: OrderStatus.confirmed,
-    );
   }
 
   static String _safeStr(dynamic v, {String fallback = ''}) =>

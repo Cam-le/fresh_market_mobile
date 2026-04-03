@@ -3,14 +3,14 @@ import 'cart.dart';
 enum OrderStatus { pending, confirmed, delivering, delivered, cancelled }
 
 class Order {
-  final String id; // local display ID (may equal apiOrderId)
-  final String?
-      apiOrderId; // "ORD-..." string returned by the API; null for mock orders
+  final String id; // display ID — equals apiOrderId.toString() for API orders
+  final int? apiOrderId; // numeric id returned by the API; null for mock orders
   final List<CartItem> items;
   final double total;
   final DateTime createdAt;
   OrderStatus status;
   final String address;
+  final String paymentMethod;
 
   Order({
     required this.id,
@@ -20,6 +20,7 @@ class Order {
     required this.createdAt,
     required this.address,
     this.status = OrderStatus.confirmed,
+    this.paymentMethod = 'COD',
   });
 
   /// Whether this order was successfully submitted to the API.

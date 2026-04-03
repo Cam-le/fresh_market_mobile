@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -17,7 +18,9 @@ class ApiClient {
   // 10.0.2.2 = Android emulator loopback to host machine localhost
   // Change to your actual server IP for real device testing
 
-  static const Duration _timeout = Duration(seconds: 10);
+  static const Duration _timeout = Duration(seconds: 15);
+  static const int _maxAttempts = 3;
+  static const Duration _retryDelay = Duration(seconds: 2);
 
   // ── internal: build headers ──────────────────────────────────────────────
 
@@ -42,7 +45,7 @@ class ApiClient {
     String path,
     Map<String, dynamic> body,
   ) async {
-    return _execute(() async {
+    return _retryable(() async {
       final response = await http
           .post(
             Uri.parse('$baseUrl$path'),
@@ -56,7 +59,7 @@ class ApiClient {
 
   /// GET without auth (guest endpoints)
   static Future<Map<String, dynamic>> getPublic(String path) async {
-    return _execute(() async {
+    return _retryable(() async {
       final response = await http
           .get(
             Uri.parse('$baseUrl$path'),
@@ -73,27 +76,31 @@ class ApiClient {
     Map<String, dynamic> body,
   ) async {
     return _withRefresh(() async {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl$path'),
-            headers: await _headers(),
-            body: jsonEncode(body),
-          )
-          .timeout(_timeout);
-      return _parse(response);
+      return _retryable(() async {
+        final response = await http
+            .post(
+              Uri.parse('$baseUrl$path'),
+              headers: await _headers(),
+              body: jsonEncode(body),
+            )
+            .timeout(_timeout);
+        return _parse(response);
+      });
     });
   }
 
   /// GET with auth — auto-refreshes token on 401
   static Future<Map<String, dynamic>> get(String path) async {
     return _withRefresh(() async {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl$path'),
-            headers: await _headers(),
-          )
-          .timeout(_timeout);
-      return _parse(response);
+      return _retryable(() async {
+        final response = await http
+            .get(
+              Uri.parse('$baseUrl$path'),
+              headers: await _headers(),
+            )
+            .timeout(_timeout);
+        return _parse(response);
+      });
     });
   }
 
@@ -103,14 +110,34 @@ class ApiClient {
     Map<String, dynamic> body,
   ) async {
     return _withRefresh(() async {
-      final response = await http
-          .put(
-            Uri.parse('$baseUrl$path'),
-            headers: await _headers(),
-            body: jsonEncode(body),
-          )
-          .timeout(_timeout);
-      return _parse(response);
+      return _retryable(() async {
+        final response = await http
+            .put(
+              Uri.parse('$baseUrl$path'),
+              headers: await _headers(),
+              body: jsonEncode(body),
+            )
+            .timeout(_timeout);
+        return _parse(response);
+      });
+    });
+  }
+
+  /// DELETE with auth and JSON body — auto-refreshes token on 401
+  static Future<Map<String, dynamic>> delete(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    return _withRefresh(() async {
+      return _retryable(() async {
+        final request = http.Request('DELETE', Uri.parse('$baseUrl$path'));
+        final hdrs = await _headers();
+        request.headers.addAll(hdrs);
+        request.body = jsonEncode(body);
+        final streamed = await request.send().timeout(_timeout);
+        final response = await http.Response.fromStream(streamed);
+        return _parse(response);
+      });
     });
   }
 
@@ -118,17 +145,22 @@ class ApiClient {
 
   /// Parse HTTP response → Map. Throws [ApiException] on non-2xx.
   static Map<String, dynamic> _parse(http.Response response) {
-    // Always log non-2xx so we can see the real server error
     if (response.statusCode < 200 || response.statusCode >= 300) {
       debugPrint('[ApiClient] ${response.statusCode} ${response.request?.url}');
       debugPrint('[ApiClient] raw body: ${response.body}');
+    }
+
+    // Some endpoints return 204 No Content — treat as success with empty map.
+    if (response.statusCode == 204 || response.body.trim().isEmpty) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true};
+      }
     }
 
     Map<String, dynamic> body;
     try {
       body = jsonDecode(response.body) as Map<String, dynamic>;
     } catch (_) {
-      // Body is not JSON — surface raw text as the error message
       final raw = response.body.trim();
       final msg = raw.isNotEmpty ? raw : 'Invalid response from server';
       throw ApiException(response.statusCode, msg);
@@ -145,22 +177,44 @@ class ApiClient {
     throw ApiException(response.statusCode, msg);
   }
 
+  /// Retries [call] up to [_maxAttempts] times on transient network/timeout
+  /// failures. Immediately rethrows [ApiException] (real server responses)
+  /// since those won't be fixed by retrying.
+  static Future<Map<String, dynamic>> _retryable(
+    Future<Map<String, dynamic>> Function() call,
+  ) async {
+    int attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        return await _execute(call);
+      } on ApiException {
+        // Real server response — don't retry, surface immediately.
+        rethrow;
+      } catch (e) {
+        // Transient error (timeout, socket, etc.) — retry if attempts remain.
+        if (attempt >= _maxAttempts) rethrow;
+        debugPrint(
+            '[ApiClient] attempt $attempt failed: $e — retrying in ${_retryDelay.inSeconds}s');
+        await Future.delayed(_retryDelay);
+      }
+    }
+  }
+
   /// Wraps a call; on 401 attempts one token refresh then retries.
   static Future<Map<String, dynamic>> _withRefresh(
     Future<Map<String, dynamic>> Function() call,
   ) async {
-    return _execute(() async {
-      try {
-        return await call();
-      } on ApiException catch (e) {
-        if (e.statusCode == 401) {
-          final refreshed = await _tryRefresh();
-          if (refreshed) return await call();
-          rethrow;
-        }
+    try {
+      return await call();
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        final refreshed = await _tryRefresh();
+        if (refreshed) return await call();
         rethrow;
       }
-    });
+      rethrow;
+    }
   }
 
   /// Attempt to refresh the access token using the stored refresh token.
@@ -216,6 +270,8 @@ class ApiClient {
       rethrow;
     } on SocketException {
       throw const ApiException(0, 'Không có kết nối mạng');
+    } on TimeoutException {
+      throw const ApiException(0, 'Máy chủ phản hồi quá chậm');
     } on HttpException {
       throw const ApiException(0, 'Lỗi kết nối máy chủ');
     } on FormatException {

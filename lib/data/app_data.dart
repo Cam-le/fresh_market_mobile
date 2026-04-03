@@ -1,6 +1,7 @@
 import '../models/product.dart';
 
 class PromoVoucher {
+  final int id; // voucherId from the API — used in POST /order voucherIds[]
   final String code;
   final String title;
   final String description;
@@ -11,6 +12,7 @@ class PromoVoucher {
   final int maxDiscount;
 
   const PromoVoucher({
+    this.id = 0, // 0 for local fallback vouchers — never sent to the API
     required this.code,
     required this.title,
     required this.description,
@@ -60,6 +62,9 @@ class AppData {
   // ── Live subcategory cache (written by ProductService) ─────────────────────
   static List<SubCategory>? _liveSubCategories;
 
+  // ── Live voucher cache (written by VoucherService) ─────────────────────────
+  static List<PromoVoucher>? _liveVouchers;
+
   /// Called by ProductService after a successful products + categories fetch.
   static void setLiveData({
     required List<Product> products,
@@ -74,11 +79,17 @@ class AppData {
     _liveSubCategories = subCategories;
   }
 
+  /// Called by VoucherService after a successful voucher fetch.
+  static void setLiveVouchers(List<PromoVoucher> v) {
+    _liveVouchers = v;
+  }
+
   /// Clears all live caches (e.g. on logout).
   static void clearLiveData() {
     _liveProducts = null;
     _liveCategories = null;
     _liveSubCategories = null;
+    _liveVouchers = null;
   }
 
   // ── Public getters ─────────────────────────────────────────────────────────
@@ -100,8 +111,10 @@ class AppData {
       ];
 
   /// Returns live subcategories, or an empty list when not yet loaded.
-  /// HomeScreen falls back to its hardcoded chips when this is empty.
   static List<SubCategory> get subCategories => _liveSubCategories ?? [];
+
+  /// Returns API vouchers if loaded, otherwise the static fallback list.
+  static List<PromoVoucher> get vouchers => _liveVouchers ?? _staticVouchers;
 
   // Legacy named getters
   static List<Product> get vegetables =>
@@ -362,7 +375,7 @@ class AppData {
     ),
   ];
 
-  static const List<PromoVoucher> vouchers = [
+  static const List<PromoVoucher> _staticVouchers = [
     PromoVoucher(
       code: 'WELCOME50',
       title: 'Chào mừng thành viên mới',

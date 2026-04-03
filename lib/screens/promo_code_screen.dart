@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../data/app_data.dart';
 import '../theme/app_theme.dart';
 
-// Internal display wrapper — merges AppData.vouchers with used-state tracking.
+// Internal display wrapper — merges voucher list with used-state tracking.
 class _VoucherItem {
   final PromoVoucher voucher;
   bool isUsed;
@@ -19,10 +19,15 @@ class PromoCodeScreen extends StatefulWidget {
   final double? cartSubtotal;
   final void Function(PromoVoucher voucher)? onApply;
 
+  /// Optional pre-loaded voucher list (e.g. from API). Falls back to
+  /// [AppData.vouchers] when null or empty.
+  final List<PromoVoucher>? availableVouchers;
+
   const PromoCodeScreen({
     super.key,
     this.cartSubtotal,
     this.onApply,
+    this.availableVouchers,
   });
 
   bool get _isPickerMode => onApply != null;
@@ -36,27 +41,34 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
   late TabController _tabController;
   final _codeCtrl = TextEditingController();
 
-  // Build from AppData; one expired code kept as "used" example.
-  final List<_VoucherItem> _items = [
-    ...AppData.vouchers.map((v) => _VoucherItem(voucher: v)),
-    _VoucherItem(
-      voucher: const PromoVoucher(
-        code: 'OLDCODE',
-        title: 'Mã đã hết hạn',
-        description: 'Mã này đã hết hạn sử dụng',
-        expiry: '01/01/2026',
-        discount: 10,
-        isPercent: true,
-        minOrder: 100000,
-      ),
-      isUsed: true,
-    ),
-  ];
+  late final List<_VoucherItem> _items;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Use caller-supplied list if provided, otherwise fall back to AppData.
+    final source = (widget.availableVouchers?.isNotEmpty == true)
+        ? widget.availableVouchers!
+        : AppData.vouchers;
+
+    _items = [
+      ...source.map((v) => _VoucherItem(voucher: v)),
+      // One static expired code kept as "used" example.
+      _VoucherItem(
+        voucher: const PromoVoucher(
+          code: 'OLDCODE',
+          title: 'Mã đã hết hạn',
+          description: 'Mã này đã hết hạn sử dụng',
+          expiry: '01/01/2026',
+          discount: 10,
+          isPercent: true,
+          minOrder: 100000,
+        ),
+        isUsed: true,
+      ),
+    ];
   }
 
   @override
@@ -120,7 +132,6 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
     final isGray = item.isUsed;
     final subtotal = widget.cartSubtotal ?? 0;
     final meetsMin = subtotal >= v.minOrder;
-    // In picker mode, vouchers that don't meet minOrder appear dimmed but visible.
     final isDisabled = widget._isPickerMode && !isGray && !meetsMin;
     final color = (isGray || isDisabled) ? Colors.grey : AppTheme.primaryGreen;
 
@@ -313,7 +324,6 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
             ),
           ),
           const Divider(height: 1),
-          // Tabs
           Expanded(
             child: TabBarView(
               controller: _tabController,
