@@ -19,7 +19,7 @@ class AuthResult<T> {
 }
 
 class AuthService {
-  // ── Mock fallback accounts ────────────────────────────────────────────────
+  // ── Mock fallback accounts (offline demo only) ────────────────────────────
   static const _mockAccounts = {
     '0961231158': '123456',
     '0123456789': '123456',
@@ -58,12 +58,9 @@ class AuthService {
 
       await _saveTokens(data);
 
-      // username and role are returned directly in data
       final username = _safeStr(data['username']);
       final role = _safeInt(data['role'], fallback: 2);
 
-      // accountId is not in the login response — decode from JWT if present,
-      // otherwise fall back to 0 (a profile fetch can populate it later)
       final token = _safeStr(data['token']);
       final jwtPayload = _decodeJwtPayload(token);
       final accountId = _safeInt(
@@ -76,7 +73,7 @@ class AuthService {
       final user = UserModel(
         accountId: accountId,
         username: username,
-        name: username, // display name until profile endpoint provides one
+        name: username,
         email: '',
         phone: phoneFromJwt.isNotEmpty ? phoneFromJwt : phone.trim(),
         city: '',
@@ -87,10 +84,13 @@ class AuthService {
       await SessionCache.setJson(SessionCache.kUser, _userToJson(user));
       return AuthResult.success(user);
     } on ApiException catch (e) {
+      // 400/401 = wrong credentials — surface directly, no retry/mock.
       if (e.statusCode == 401 || e.statusCode == 400) {
         return const AuthResult.failure(
             'Số điện thoại hoặc mật khẩu không đúng');
       }
+      // Network/timeout exhausted all retries — fall back to mock so the
+      // demo remains usable without a live backend.
       return _mockLogin(phone, password);
     } catch (_) {
       return _mockLogin(phone, password);
@@ -144,36 +144,14 @@ class AuthService {
 
       return AuthResult.success(user);
     } on ApiException catch (e) {
+      // 400/409 = validation or duplicate — surface the server message.
       if (e.statusCode == 400 || e.statusCode == 409) {
         return AuthResult.failure(e.message);
       }
-      return AuthResult.success(
-        UserModel(
-          accountId: 0,
-          username: 'user_demo',
-          name: '',
-          email: '',
-          phone: phone.trim(),
-          city: '',
-          role: 2,
-          joinedAt: DateTime.now(),
-        ),
-        fromMock: true,
-      );
+      // Any other server error — surface a generic message.
+      return const AuthResult.failure('Đăng ký thất bại, vui lòng thử lại sau');
     } catch (_) {
-      return AuthResult.success(
-        UserModel(
-          accountId: 0,
-          username: 'user_demo',
-          name: '',
-          email: '',
-          phone: phone.trim(),
-          city: '',
-          role: 2,
-          joinedAt: DateTime.now(),
-        ),
-        fromMock: true,
-      );
+      return const AuthResult.failure('Đăng ký thất bại, vui lòng thử lại sau');
     }
   }
 
@@ -206,7 +184,6 @@ class AuthService {
     try {
       final parts = token.split('.');
       if (parts.length != 3) return {};
-      // JWT uses base64url — pad to a multiple of 4
       var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
       switch (payload.length % 4) {
         case 2:

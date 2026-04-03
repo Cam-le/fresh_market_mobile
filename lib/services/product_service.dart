@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../data/app_data.dart';
 import '../models/product.dart';
 import 'api_client.dart';
@@ -59,8 +60,11 @@ class ProductService {
         products: products,
         categories: _buildCategories(products),
       );
-    } catch (_) {
-      // Silently keep mock data
+    } on ApiException catch (e) {
+      debugPrint(
+          '[ProductService] _fetchProducts ApiException: ${e.statusCode} ${e.message}');
+    } catch (e) {
+      debugPrint('[ProductService] _fetchProducts error: $e');
     }
   }
 
@@ -85,8 +89,11 @@ class ProductService {
       if (subCategories.isNotEmpty) {
         AppData.setSubCategories(subCategories);
       }
-    } catch (_) {
-      // Silently keep empty subcategory list
+    } on ApiException catch (e) {
+      debugPrint(
+          '[ProductService] _fetchSubCategories ApiException: ${e.statusCode} ${e.message}');
+    } catch (e) {
+      debugPrint('[ProductService] _fetchSubCategories error: $e');
     }
   }
 
@@ -97,7 +104,12 @@ class ProductService {
       final data = response['data'];
       if (data is! Map<String, dynamic>) return null;
       return Product.fromJson(data, _resolveCategoryId(data));
-    } catch (_) {
+    } on ApiException catch (e) {
+      debugPrint(
+          '[ProductService] fetchById($productId) ApiException: ${e.statusCode} ${e.message}');
+      return null;
+    } catch (e) {
+      debugPrint('[ProductService] fetchById($productId) error: $e');
       return null;
     }
   }

@@ -17,7 +17,7 @@ class OrderService {
   // ── Create ─────────────────────────────────────────────────────────────────
 
   /// POST /order  →  builds an [Order] from the response + original cart items.
-  /// Falls back to local mock on any network/server error (except 401).
+  /// Throws [ApiException] on failure — caller is responsible for showing error.
   static Future<OrderResult> create({
     required List<CartItem> items,
     required double total,
@@ -48,66 +48,47 @@ class OrderService {
       };
     }).toList();
 
-    try {
-      final postResponse = await ApiClient.post('/order', {
-        'voucherIds': voucherIds,
-        'shippingName': shippingName,
-        'shippingPhone': shippingPhone,
-        'shippingAddress': shippingAddress,
-        'shippingFee': shippingFee,
-        'paymentMethod': paymentMethod,
-        'items': apiItems,
-      });
+    final postResponse = await ApiClient.post('/order', {
+      'voucherIds': voucherIds,
+      'shippingName': shippingName,
+      'shippingPhone': shippingPhone,
+      'shippingAddress': shippingAddress,
+      'shippingFee': shippingFee,
+      'paymentMethod': paymentMethod,
+      'items': apiItems,
+    });
 
-      debugPrint('[OrderService] POST /order SUCCESS: $postResponse');
+    debugPrint('[OrderService] POST /order SUCCESS: $postResponse');
 
-      // The API wraps its payload in a "data" key.
-      final data = postResponse['data'];
-      final responseMap = data is Map<String, dynamic> ? data : postResponse;
+    // The API wraps its payload in a "data" key.
+    final data = postResponse['data'];
+    final responseMap = data is Map<String, dynamic> ? data : postResponse;
 
-      final apiOrderId = _safeInt(responseMap['orderId']);
-      final displayId = apiOrderId != 0
-          ? apiOrderId.toString()
-          : 'ORD${DateTime.now().millisecondsSinceEpoch}';
+    final apiOrderId = _safeInt(responseMap['orderId']);
+    final displayId = apiOrderId != 0
+        ? apiOrderId.toString()
+        : 'ORD${DateTime.now().millisecondsSinceEpoch}';
 
-      final statusStr =
-          _safeStr(responseMap['orderStatus'], fallback: 'PENDING');
-      final createdAtStr = responseMap['createdAtUtc'] as String?;
-      final createdAt = createdAtStr != null
-          ? (DateTime.tryParse(createdAtStr) ?? DateTime.now())
-          : DateTime.now();
+    final statusStr = _safeStr(responseMap['orderStatus'], fallback: 'PENDING');
+    final createdAtStr = responseMap['createdAtUtc'] as String?;
+    final createdAt = createdAtStr != null
+        ? (DateTime.tryParse(createdAtStr) ?? DateTime.now())
+        : DateTime.now();
 
-      final fullAddress = '$shippingName • $shippingPhone • $shippingAddress';
+    final fullAddress = '$shippingName • $shippingPhone • $shippingAddress';
 
-      final order = Order(
-        id: displayId,
-        apiOrderId: apiOrderId != 0 ? apiOrderId : null,
-        items: List.from(items),
-        total: total,
-        createdAt: createdAt,
-        address: fullAddress,
-        status: _parseApiStatus(statusStr),
-        paymentMethod: paymentMethod,
-      );
+    final order = Order(
+      id: displayId,
+      apiOrderId: apiOrderId != 0 ? apiOrderId : null,
+      items: List.from(items),
+      total: total,
+      createdAt: createdAt,
+      address: fullAddress,
+      status: _parseApiStatus(statusStr),
+      paymentMethod: paymentMethod,
+    );
 
-      return OrderResult(order);
-    } on ApiException catch (e) {
-      debugPrint(
-          '[OrderService] API EXCEPTION: status=${e.statusCode} msg=${e.message}');
-      if (e.statusCode == 401) rethrow;
-      return OrderResult(
-        _mockOrder(items, total,
-            '$shippingName • $shippingPhone • $shippingAddress', paymentMethod),
-        fromMock: true,
-      );
-    } catch (e) {
-      debugPrint('[OrderService] UNEXPECTED ERROR: $e');
-      return OrderResult(
-        _mockOrder(items, total,
-            '$shippingName • $shippingPhone • $shippingAddress', paymentMethod),
-        fromMock: true,
-      );
-    }
+    return OrderResult(order);
   }
 
   // ── Fetch my orders ────────────────────────────────────────────────────────
@@ -258,7 +239,6 @@ class OrderService {
     double total = 0;
     for (final item in rawItems) {
       if (item is Map) {
-        // prefer subTotal, fall back to price * quantity
         final sub = _safeDouble(item['subTotal']);
         if (sub > 0) {
           total += sub;
@@ -289,20 +269,6 @@ class OrderService {
       default:
         return OrderStatus.pending;
     }
-  }
-
-  static Order _mockOrder(List<CartItem> items, double total, String address,
-      String paymentMethod) {
-    return Order(
-      id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
-      apiOrderId: null,
-      items: List.from(items),
-      total: total,
-      createdAt: DateTime.now(),
-      address: address,
-      status: OrderStatus.confirmed,
-      paymentMethod: paymentMethod,
-    );
   }
 
   static String _safeStr(dynamic v, {String fallback = ''}) =>
