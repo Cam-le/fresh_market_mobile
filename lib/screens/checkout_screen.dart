@@ -202,12 +202,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         borderRadius: BorderRadius.circular(8),
                         color: const Color(0xFFE8F5E9),
                       ),
-                      child: Row(
+                      child: const Row(
                         children: [
-                          const Icon(Icons.add_circle_outline,
+                          Icon(Icons.add_circle_outline,
                               color: AppTheme.primaryGreen, size: 18),
-                          const SizedBox(width: 8),
-                          const Expanded(
+                          SizedBox(width: 8),
+                          Expanded(
                             child: Text(
                               'Chọn mã giảm giá',
                               style: TextStyle(
@@ -216,7 +216,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   fontWeight: FontWeight.w600),
                             ),
                           ),
-                          const Icon(Icons.chevron_right,
+                          Icon(Icons.chevron_right,
                               color: AppTheme.primaryGreen, size: 18),
                         ],
                       ),
