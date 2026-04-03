@@ -27,7 +27,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // Voucher state
   PromoVoucher? _appliedVoucher;
   List<PromoVoucher> _availableVouchers = [];
-  bool _vouchersLoaded = false;
 
   final List<Map<String, dynamic>> _paymentMethods = [
     {'icon': Icons.money, 'label': 'Tiền mặt khi nhận hàng', 'sub': 'COD'},
@@ -51,10 +50,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _loadVouchers() async {
     final vouchers = await VoucherService.fetchAll();
     if (!mounted) return;
-    setState(() {
-      _availableVouchers = vouchers;
-      _vouchersLoaded = true;
-    });
+    setState(() => _availableVouchers = vouchers);
   }
 
   String _formatPrice(num price) {
@@ -80,9 +76,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _openVoucherPicker() async {
-    final vouchers = _vouchersLoaded && _availableVouchers.isNotEmpty
-        ? _availableVouchers
-        : AppData.vouchers;
+    final vouchers =
+        _availableVouchers.isNotEmpty ? _availableVouchers : AppData.vouchers;
 
     if (!mounted) return;
     await Navigator.push<void>(
@@ -207,12 +202,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         borderRadius: BorderRadius.circular(8),
                         color: const Color(0xFFE8F5E9),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.add_circle_outline,
+                          const Icon(Icons.add_circle_outline,
                               color: AppTheme.primaryGreen, size: 18),
-                          SizedBox(width: 8),
-                          Expanded(
+                          const SizedBox(width: 8),
+                          const Expanded(
                             child: Text(
                               'Chọn mã giảm giá',
                               style: TextStyle(
@@ -221,7 +216,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   fontWeight: FontWeight.w600),
                             ),
                           ),
-                          Icon(Icons.chevron_right,
+                          const Icon(Icons.chevron_right,
                               color: AppTheme.primaryGreen, size: 18),
                         ],
                       ),
