@@ -127,61 +127,9 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildCartList(List<CartItem> items, CartModel cart) {
-    // FIX: compute remaining as double explicitly to avoid num type error
-    final double remaining = (200000.0 - cart.subtotal).clamp(0.0, 200000.0);
-
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        // Free shipping progress
-        Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8F5E9),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.local_shipping_outlined,
-                    size: 18,
-                    color: AppTheme.primaryGreen,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      cart.shippingFee == 0
-                          ? '🎉 Bạn được miễn phí giao hàng!'
-                          : 'Mua thêm ${_formatPrice(remaining)} để được miễn phí giao hàng',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.primaryGreen,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: (cart.subtotal / 200000.0).clamp(0.0, 1.0),
-                  backgroundColor: Colors.white,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppTheme.primaryGreen,
-                  ),
-                  minHeight: 6,
-                ),
-              ),
-            ],
-          ),
-        ),
-
         ...items.map(
           (item) => _CartItemCard(
             item: item,
