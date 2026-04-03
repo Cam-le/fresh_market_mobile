@@ -13,6 +13,12 @@ class CategorySection extends StatelessWidget {
   const CategorySection(
       {super.key, required this.category, required this.appState});
 
+  static bool _isOutOfStock(Product p) {
+    if (!p.isAvailable) return true;
+    final qty = p.stockQuantity;
+    return qty != null && qty <= 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     const double gridPadding = 12;
@@ -79,6 +85,7 @@ class CategorySection extends StatelessWidget {
           itemCount: category.products.length,
           itemBuilder: (context, index) {
             final product = category.products[index];
+            final outOfStock = _isOutOfStock(product);
             return ProductCard(
               product: product,
               onTap: () => Navigator.push(
@@ -88,19 +95,22 @@ class CategorySection extends StatelessWidget {
                       ProductDetailScreen(product: product, appState: appState),
                 ),
               ),
-              onAddToCart: () {
-                appState.addToCart(product);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Đã thêm ${product.name} vào giỏ'),
-                    duration: const Duration(seconds: 1),
-                    backgroundColor: AppTheme.primaryGreen,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                );
-              },
+              // Pass null when out of stock — ProductCard hides the button
+              onAddToCart: outOfStock
+                  ? null
+                  : () {
+                      appState.addToCart(product);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Đã thêm ${product.name} vào giỏ'),
+                          duration: const Duration(seconds: 1),
+                          backgroundColor: AppTheme.primaryGreen,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                      );
+                    },
             );
           },
         ),

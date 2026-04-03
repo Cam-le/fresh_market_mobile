@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/app_state.dart';
+import '../services/product_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/product_reviews.dart';
 import '../widgets/app_footer.dart';
@@ -23,6 +24,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
   bool _descExpanded = false;
 
+  // Live product data — starts from the passed-in product, refreshed via API
+  late Product _product;
+
+  @override
+  void initState() {
+    super.initState();
+    _product = widget.product;
+    _refreshStock();
+  }
+
+  /// Fetches the latest stock data from GET /product/{id} in the background.
+  /// Updates UI when the response arrives without blocking the initial render.
+  Future<void> _refreshStock() async {
+    final pid = _product.productId;
+    if (pid == null || pid == 0) return;
+    final fresh = await ProductService.fetchById(pid);
+    if (!mounted || fresh == null) return;
+    setState(() {
+      _product = fresh;
+      // Clamp quantity if stock dropped below current selection
+      final max = _maxQty;
+      if (max != null && _quantity > max) _quantity = max < 1 ? 1 : max;
+    });
+  }
+
+  /// null = unlimited (no stock data); 0 = out of stock
+  int? get _maxQty {
+    final qty = _product.stockQuantity;
+    if (qty == null) return null;
+    return qty;
+  }
+
+  bool get _isOutOfStock {
+    if (!_product.isAvailable) return true;
+    final max = _maxQty;
+    if (max != null && max <= 0) return true;
+    return false;
+  }
+
   String _formatPrice(double price) {
     final formatted = price
         .toStringAsFixed(0)
@@ -30,9 +70,40 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return '$formatted₫';
   }
 
+  void _addToCart() {
+    if (_isOutOfStock) return;
+    final p = _product;
+    for (int i = 0; i < _quantity; i++) {
+      widget.appState.cart.add(p);
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Đã thêm $_quantity x ${p.name} vào giỏ'),
+        backgroundColor: AppTheme.primaryGreen,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        action: SnackBarAction(
+          label: 'Xem giỏ',
+          textColor: Colors.white,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+    );
+  }
+
+  void _buyNow() {
+    if (_isOutOfStock) return;
+    final p = _product;
+    for (int i = 0; i < _quantity; i++) {
+      widget.appState.cart.add(p);
+    }
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final p = widget.product;
+    final p = _product;
     final isWishlisted = widget.appState.wishlist.contains(p.id);
     final cartQty = widget.appState.cart.quantityOf(p.id);
 
@@ -68,62 +139,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFFE0E0E0)),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _QtyButton(
-                    icon: Icons.remove,
-                    onTap: () {
-                      if (_quantity > 1) setState(() => _quantity--);
-                    },
-                  ),
-                  SizedBox(
-                    width: 36,
-                    child: Text(
-                      '$_quantity',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700),
+            // Quantity stepper — hidden when out of stock
+            if (!_isOutOfStock) ...[
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFFE0E0E0)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _QtyButton(
+                      icon: Icons.remove,
+                      onTap: () {
+                        if (_quantity > 1) setState(() => _quantity--);
+                      },
                     ),
-                  ),
-                  _QtyButton(
-                    icon: Icons.add,
-                    onTap: () => setState(() => _quantity++),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  for (int i = 0; i < _quantity; i++) {
-                    widget.appState.cart.add(p);
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Đã thêm $_quantity x ${p.name} vào giỏ'),
-                      backgroundColor: AppTheme.primaryGreen,
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 2),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      action: SnackBarAction(
-                        label: 'Xem giỏ',
-                        textColor: Colors.white,
-                        onPressed: () => Navigator.pop(context),
+                    SizedBox(
+                      width: 36,
+                      child: Text(
+                        '$_quantity',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700),
                       ),
                     ),
-                  );
-                },
+                    _QtyButton(
+                      icon: Icons.add,
+                      onTap: () {
+                        final max = _maxQty;
+                        if (max == null || _quantity < max) {
+                          setState(() => _quantity++);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _isOutOfStock ? null : _addToCart,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(0, 48),
-                  backgroundColor: AppTheme.primaryGreen,
+                  backgroundColor: _isOutOfStock
+                      ? AppTheme.textLight
+                      : AppTheme.primaryGreen,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
@@ -131,10 +193,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.shopping_cart_outlined, size: 18),
+                    Icon(
+                      _isOutOfStock
+                          ? Icons.remove_shopping_cart_outlined
+                          : Icons.shopping_cart_outlined,
+                      size: 18,
+                    ),
                     const SizedBox(width: 6),
                     Text(
-                      cartQty > 0 ? 'Thêm vào giỏ ($cartQty)' : 'Thêm vào giỏ',
+                      _isOutOfStock
+                          ? 'Hết hàng'
+                          : (cartQty > 0
+                              ? 'Thêm vào giỏ ($cartQty)'
+                              : 'Thêm vào giỏ'),
                       style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w700),
                     ),
@@ -189,7 +260,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                 ),
-                if (p.isSale && p.discountPercent > 0)
+                // Out of stock overlay
+                if (_isOutOfStock)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      child: const Center(
+                        child: Text(
+                          'HẾT HÀNG',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 4,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (p.isSale && p.discountPercent > 0 && !_isOutOfStock)
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -293,7 +382,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Mã sản phẩm: ${p.id}',
+                    'Mã sản phẩm: ${p.productId ?? p.id}',
                     style: const TextStyle(
                         fontSize: 12, color: AppTheme.textLight),
                   ),
@@ -301,12 +390,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Row(
                     children: [
                       _InfoChip(
-                          label: (p.category == 'rau_cu' ||
-                                  p.category == 'trai_cay')
-                              ? 'VietGAP'
-                              : 'Tươi sạch'),
+                          label: p.isOrganic
+                              ? 'Hữu cơ'
+                              : (p.category == 'rau_cu' ||
+                                      p.category == 'trai_cay')
+                                  ? 'VietGAP'
+                                  : 'Tươi sạch'),
                       const SizedBox(width: 8),
-                      const _StatusDot(label: 'Còn hàng', active: true),
+                      _StatusDot(
+                        label: _isOutOfStock ? 'Hết hàng' : 'Còn hàng',
+                        active: !_isOutOfStock,
+                      ),
+                      // Show remaining stock count when low (≤ 10)
+                      if (!_isOutOfStock &&
+                          _maxQty != null &&
+                          _maxQty! <= 10) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3E0),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFFCC80)),
+                          ),
+                          child: Text(
+                            'Còn ${_maxQty!} sp',
+                            style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFFE65100),
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -337,10 +453,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     children: [
                       Text(
                         _formatPrice(p.price),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: AppTheme.primaryGreen,
+                          color: _isOutOfStock
+                              ? AppTheme.textLight
+                              : AppTheme.primaryGreen,
                         ),
                       ),
                       if (p.originalPrice != null) ...[
@@ -403,22 +521,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            for (int i = 0; i < _quantity; i++) {
-                              widget.appState.cart.add(p);
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'Đã thêm $_quantity x ${p.name} vào giỏ'),
-                                backgroundColor: AppTheme.primaryGreen,
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 2),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                              ),
-                            );
-                          },
+                          onPressed: _isOutOfStock ? null : _addToCart,
                           icon: const Icon(Icons.shopping_cart_outlined,
                               size: 16),
                           label: const Text('THÊM VÀO GIỎ',
@@ -426,8 +529,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   fontSize: 12, fontWeight: FontWeight.w700)),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.primaryGreen,
-                            side: const BorderSide(
-                                color: AppTheme.primaryGreen, width: 1.5),
+                            side: BorderSide(
+                                color: _isOutOfStock
+                                    ? AppTheme.textLight
+                                    : AppTheme.primaryGreen,
+                                width: 1.5),
                             minimumSize: const Size(0, 46),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8)),
@@ -437,22 +543,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            for (int i = 0; i < _quantity; i++) {
-                              widget.appState.cart.add(p);
-                            }
-                            Navigator.pop(context);
-                          },
+                          onPressed: _isOutOfStock ? null : _buyNow,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryGreen,
+                            backgroundColor: _isOutOfStock
+                                ? AppTheme.textLight
+                                : AppTheme.primaryGreen,
                             foregroundColor: Colors.white,
                             minimumSize: const Size(0, 46),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8)),
                           ),
-                          child: const Text('MUA NGAY',
-                              style: TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w700)),
+                          child: Text(
+                            _isOutOfStock ? 'KHÔNG CÒN HÀNG' : 'MUA NGAY',
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
                         ),
                       ),
                     ],
@@ -476,51 +581,59 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           color: AppTheme.textDark)),
                   const SizedBox(height: 8),
                   Text(
-                    _descExpanded
-                        ? '- Xuất xứ: Việt Nam\n'
-                            '- Chất lượng: Đạt chuẩn VietGAP\n'
-                            '- Không thuốc trừ sâu, không chất bảo quản\n'
-                            '- Giao hàng trong ngày, giữ nguyên độ tươi ngon\n\n'
-                            'Đặc điểm:\n'
-                            '- Sản phẩm tươi sạch, thu hoạch hàng ngày\n'
-                            '- Đóng gói vệ sinh, đảm bảo an toàn thực phẩm\n'
-                            '- Tăng cường hệ miễn dịch nhờ Vitamin C dồi dào\n'
-                            '- Phù hợp cho mọi lứa tuổi, đặc biệt trẻ em'
-                        : '- Xuất xứ: Việt Nam\n'
-                            '- Chất lượng: Đạt chuẩn VietGAP\n'
-                            '- Không thuốc trừ sâu, không chất bảo quản',
+                    // Use real API description when available
+                    p.description?.isNotEmpty == true
+                        ? (_descExpanded
+                            ? p.description!
+                            : p.description!.length > 120
+                                ? '${p.description!.substring(0, 120)}...'
+                                : p.description!)
+                        : (_descExpanded
+                            ? '- Xuất xứ: Việt Nam\n'
+                                '- Chất lượng: Đạt chuẩn VietGAP\n'
+                                '- Không thuốc trừ sâu, không chất bảo quản\n'
+                                '- Giao hàng trong ngày, giữ nguyên độ tươi ngon\n\n'
+                                'Đặc điểm:\n'
+                                '- Sản phẩm tươi sạch, thu hoạch hàng ngày\n'
+                                '- Đóng gói vệ sinh, đảm bảo an toàn thực phẩm'
+                            : '- Xuất xứ: Việt Nam\n'
+                                '- Chất lượng: Đạt chuẩn VietGAP\n'
+                                '- Không thuốc trừ sâu, không chất bảo quản'),
                     style: const TextStyle(
                         fontSize: 14, color: AppTheme.textGray, height: 1.7),
                   ),
                   const SizedBox(height: 8),
-                  Center(
-                    child: OutlinedButton.icon(
-                      onPressed: () =>
-                          setState(() => _descExpanded = !_descExpanded),
-                      icon: Icon(
-                        _descExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        size: 16,
-                        color: AppTheme.primaryGreen,
-                      ),
-                      label: Text(
-                        _descExpanded
-                            ? 'Thu gọn nội dung'
-                            : 'Xem thêm nội dung',
-                        style: const TextStyle(
-                            fontSize: 12, color: AppTheme.primaryGreen),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                            color: AppTheme.primaryGreen, width: 1),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                  // Only show expand button when description is long enough
+                  if ((p.description?.length ?? 0) > 120 ||
+                      p.description == null)
+                    Center(
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            setState(() => _descExpanded = !_descExpanded),
+                        icon: Icon(
+                          _descExpanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          size: 16,
+                          color: AppTheme.primaryGreen,
+                        ),
+                        label: Text(
+                          _descExpanded
+                              ? 'Thu gọn nội dung'
+                              : 'Xem thêm nội dung',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppTheme.primaryGreen),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                              color: AppTheme.primaryGreen, width: 1),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -532,10 +645,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  'VietGAP',
+                  if (p.isOrganic) 'Hữu cơ',
+                  if (p.manufacturingLocation != null) p.manufacturingLocation!,
                   'Tươi sạch',
                   'Giao trong ngày',
-                  'Không hóa chất'
+                  if (!p.isOrganic) 'Không hóa chất',
                 ]
                     .map((tag) => Container(
                           padding: const EdgeInsets.symmetric(
@@ -678,7 +792,7 @@ class _StatusDot extends StatelessWidget {
             width: 7,
             height: 7,
             decoration: BoxDecoration(
-              color: active ? AppTheme.primaryGreen : AppTheme.textGray,
+              color: active ? AppTheme.primaryGreen : AppTheme.discountRed,
               shape: BoxShape.circle,
             ),
           ),
@@ -686,7 +800,7 @@ class _StatusDot extends StatelessWidget {
           Text(label,
               style: TextStyle(
                   fontSize: 12,
-                  color: active ? AppTheme.primaryGreen : AppTheme.textGray,
+                  color: active ? AppTheme.primaryGreen : AppTheme.discountRed,
                   fontWeight: FontWeight.w600)),
         ],
       );

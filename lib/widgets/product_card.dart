@@ -14,6 +14,13 @@ class ProductCard extends StatelessWidget {
     this.onTap,
   });
 
+  bool get _isOutOfStock {
+    if (!product.isAvailable) return true;
+    final qty = product.stockQuantity;
+    if (qty != null && qty <= 0) return true;
+    return false;
+  }
+
   String _formatPrice(double price) {
     final formatted = price
         .toStringAsFixed(0)
@@ -50,33 +57,94 @@ class ProductCard extends StatelessWidget {
                       topRight: Radius.circular(10),
                     ),
                     child: SizedBox.expand(
-                      child: Image.network(
-                        product.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: const Color(0xFFE8F5E9),
-                          child: const Icon(
-                            Icons.image_not_supported_outlined,
-                            color: AppTheme.primaryGreen,
-                            size: 28,
-                          ),
-                        ),
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: const Color(0xFFE8F5E9),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: AppTheme.primaryGreen,
-                                strokeWidth: 2,
+                      child: _isOutOfStock
+                          ? ColorFiltered(
+                              colorFilter: const ColorFilter.matrix([
+                                0.2126,
+                                0.7152,
+                                0.0722,
+                                0,
+                                0,
+                                0.2126,
+                                0.7152,
+                                0.0722,
+                                0,
+                                0,
+                                0.2126,
+                                0.7152,
+                                0.0722,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                1,
+                                0,
+                              ]),
+                              child: Image.network(
+                                product.imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: const Color(0xFFE0E0E0),
+                                  child: const Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: AppTheme.textLight,
+                                    size: 28,
+                                  ),
+                                ),
                               ),
+                            )
+                          : Image.network(
+                              product.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: const Color(0xFFE8F5E9),
+                                child: const Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: AppTheme.primaryGreen,
+                                  size: 28,
+                                ),
+                              ),
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: const Color(0xFFE8F5E9),
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      color: AppTheme.primaryGreen,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ),
                   ),
-                  if (product.isSale && product.discountPercent > 0)
+                  // Out of stock banner
+                  if (_isOutOfStock)
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        color: Colors.black54,
+                        child: const Text(
+                          'Hết hàng',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (!_isOutOfStock &&
+                      product.isSale &&
+                      product.discountPercent > 0)
                     Positioned(
                       top: 4,
                       left: 4,
@@ -97,7 +165,7 @@ class ProductCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  if (product.isNew)
+                  if (!_isOutOfStock && product.isNew)
                     Positioned(
                       top: 4,
                       left: 4,
@@ -153,10 +221,12 @@ class ProductCard extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
+                      color: _isOutOfStock
+                          ? AppTheme.textLight
+                          : AppTheme.textDark,
                       height: 1.2,
                     ),
                     maxLines: 2,
@@ -203,10 +273,12 @@ class ProductCard extends StatelessWidget {
                           children: [
                             Text(
                               _formatPrice(product.price),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: AppTheme.primaryGreen,
+                                color: _isOutOfStock
+                                    ? AppTheme.textLight
+                                    : AppTheme.primaryGreen,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -224,23 +296,22 @@ class ProductCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      GestureDetector(
-                        // Stop the tap from also firing the card's onTap
-                        onTap: () {
-                          onAddToCart?.call();
-                        },
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryGreen,
-                            borderRadius: BorderRadius.circular(6),
+                      // Add button — hidden when out of stock
+                      if (!_isOutOfStock)
+                        GestureDetector(
+                          onTap: () => onAddToCart?.call(),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryGreen,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(Icons.add,
+                                color: Colors.white, size: 14),
                           ),
-                          child: const Icon(Icons.add,
-                              color: Colors.white, size: 14),
                         ),
-                      ),
                     ],
                   ),
                 ],

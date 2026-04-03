@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../data/app_data.dart';
+import '../services/voucher_service.dart';
 import '../theme/app_theme.dart';
 
 // Internal display wrapper — merges voucher list with used-state tracking.
@@ -41,21 +42,21 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
   late TabController _tabController;
   final _codeCtrl = TextEditingController();
 
-  late final List<_VoucherItem> _items;
+  List<_VoucherItem> _items = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _buildItems(widget.availableVouchers ?? AppData.vouchers);
+    // Always re-fetch so the list is current regardless of how the screen
+    // was opened (picker from checkout or standalone from profile).
+    _fetchVouchers();
+  }
 
-    // Use caller-supplied list if provided, otherwise fall back to AppData.
-    final source = (widget.availableVouchers?.isNotEmpty == true)
-        ? widget.availableVouchers!
-        : AppData.vouchers;
-
+  void _buildItems(List<PromoVoucher> source) {
     _items = [
       ...source.map((v) => _VoucherItem(voucher: v)),
-      // One static expired code kept as "used" example.
       _VoucherItem(
         voucher: const PromoVoucher(
           code: 'OLDCODE',
@@ -69,6 +70,12 @@ class _PromoCodeScreenState extends State<PromoCodeScreen>
         isUsed: true,
       ),
     ];
+  }
+
+  Future<void> _fetchVouchers() async {
+    final vouchers = await VoucherService.fetchAll();
+    if (!mounted) return;
+    setState(() => _buildItems(vouchers));
   }
 
   @override

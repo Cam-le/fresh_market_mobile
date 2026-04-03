@@ -27,7 +27,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // Voucher state
   PromoVoucher? _appliedVoucher;
   List<PromoVoucher> _availableVouchers = [];
-  bool _vouchersLoaded = false;
 
   final List<Map<String, dynamic>> _paymentMethods = [
     {'icon': Icons.money, 'label': 'Tiền mặt khi nhận hàng', 'sub': 'COD'},
@@ -51,10 +50,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _loadVouchers() async {
     final vouchers = await VoucherService.fetchAll();
     if (!mounted) return;
-    setState(() {
-      _availableVouchers = vouchers;
-      _vouchersLoaded = true;
-    });
+    setState(() => _availableVouchers = vouchers);
   }
 
   String _formatPrice(num price) {
@@ -80,9 +76,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _openVoucherPicker() async {
-    final vouchers = _vouchersLoaded && _availableVouchers.isNotEmpty
-        ? _availableVouchers
-        : AppData.vouchers;
+    final vouchers =
+        _availableVouchers.isNotEmpty ? _availableVouchers : AppData.vouchers;
 
     if (!mounted) return;
     await Navigator.push<void>(
