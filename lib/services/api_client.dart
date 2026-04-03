@@ -114,21 +114,42 @@ class ApiClient {
     });
   }
 
+  /// DELETE with auth and JSON body — auto-refreshes token on 401
+  static Future<Map<String, dynamic>> delete(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    return _withRefresh(() async {
+      final request = http.Request('DELETE', Uri.parse('$baseUrl$path'));
+      final hdrs = await _headers();
+      request.headers.addAll(hdrs);
+      request.body = jsonEncode(body);
+      final streamed = await request.send().timeout(_timeout);
+      final response = await http.Response.fromStream(streamed);
+      return _parse(response);
+    });
+  }
+
   // ── internals ────────────────────────────────────────────────────────────
 
   /// Parse HTTP response → Map. Throws [ApiException] on non-2xx.
   static Map<String, dynamic> _parse(http.Response response) {
-    // Always log non-2xx so we can see the real server error
     if (response.statusCode < 200 || response.statusCode >= 300) {
       debugPrint('[ApiClient] ${response.statusCode} ${response.request?.url}');
       debugPrint('[ApiClient] raw body: ${response.body}');
+    }
+
+    // Some endpoints return 204 No Content — treat as success with empty map.
+    if (response.statusCode == 204 || response.body.trim().isEmpty) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true};
+      }
     }
 
     Map<String, dynamic> body;
     try {
       body = jsonDecode(response.body) as Map<String, dynamic>;
     } catch (_) {
-      // Body is not JSON — surface raw text as the error message
       final raw = response.body.trim();
       final msg = raw.isNotEmpty ? raw : 'Invalid response from server';
       throw ApiException(response.statusCode, msg);

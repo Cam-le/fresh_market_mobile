@@ -58,21 +58,29 @@ class AuthService {
 
       await _saveTokens(data);
 
-      // accountId is NOT returned by login endpoint — decode from JWT 'sub' claim
+      // username and role are returned directly in data
+      final username = _safeStr(data['username']);
+      final role = _safeInt(data['role'], fallback: 2);
+
+      // accountId is not in the login response — decode from JWT if present,
+      // otherwise fall back to 0 (a profile fetch can populate it later)
       final token = _safeStr(data['token']);
       final jwtPayload = _decodeJwtPayload(token);
-      final accountId = _safeInt(jwtPayload['sub'] ?? jwtPayload['accountId']);
+      final accountId = _safeInt(
+        jwtPayload['sub'] ?? jwtPayload['accountId'],
+        fallback: 0,
+      );
       final phoneFromJwt =
           _safeStr(jwtPayload['phone'], fallback: phone.trim());
 
       final user = UserModel(
         accountId: accountId,
-        username: _safeStr(data['username']),
-        name: _safeStr(data['username']),
+        username: username,
+        name: username, // display name until profile endpoint provides one
         email: '',
         phone: phoneFromJwt.isNotEmpty ? phoneFromJwt : phone.trim(),
         city: '',
-        role: _safeInt(data['role']),
+        role: role,
         joinedAt: DateTime.now(),
       );
 
